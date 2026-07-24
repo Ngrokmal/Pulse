@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The INTERNET permission is required for development. Specifying
+         this permission indicates the transport channel used for debugging
+         the app is the internet. This permission is not used in release. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

@@ -1,0 +1,226 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function moderationFields() {
+      return ['isBanned', 'isDisabled', 'banType', 'banExpiresAt', 'bannedAt', 'disabledAt'];
+    }
+
+    function touchesModerationFields() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(moderationFields());
+    }
+
+    match /usernames/{usernameLower} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(uid);
+
+      function friendsCountMirrorWrite() {
+        return isSignedIn() && request.auth.uid != uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friendsCount']) &&
+          (
+            (request.resource.data.friendsCount == resource.data.get('friendsCount', 0) + 1 &&
+              !exists(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(uid)) &&
+              existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(uid))) ||
+            (request.resource.data.friendsCount == resource.data.get('friendsCount', 0) - 1 &&
+              exists(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(uid)) &&
+              !existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(uid)))
+          );
+      }
+
+      function friendsCountValid() {
+        return !('friendsCount' in request.resource.data) || request.resource.data.friendsCount >= 0;
+      }
+
+      allow update: if ((isOwner(uid) && !touchesModerationFields()) || isAdmin() || friendsCountMirrorWrite())
+        && friendsCountValid();
+      allow delete: if false;
+
+      function hasPendingFriendRequest(uid, otherUid) {
+        return exists(/databases/$(database)/documents/users/$(uid)/friendRequests/$(otherUid)) ||
+          exists(/databases/$(database)/documents/users/$(otherUid)/friendRequests/$(uid));
+      }
+
+      match /friends/{otherUid} {
+        allow read: if isOwner(uid);
+        allow create: if isSignedIn() && (request.auth.uid == uid || request.auth.uid == otherUid) &&
+          hasPendingFriendRequest(uid, otherUid);
+        allow update: if isSignedIn() && (request.auth.uid == uid || request.auth.uid == otherUid);
+        allow delete: if isSignedIn() && (request.auth.uid == uid || request.auth.uid == otherUid);
+      }
+
+      match /alertSounds/{alertId} {
+        allow read, write: if isOwner(uid);
+      }
+      match /friendAlertSounds/{friendUid}/sounds/{alertId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /friendRequests/{otherUid} {
+        allow read: if isOwner(uid);
+        allow write: if isSignedIn() && (request.auth.uid == uid || request.auth.uid == otherUid);
+      }
+
+      match /blocked/{otherUid} {
+        allow read: if isOwner(uid) || (isSignedIn() && request.auth.uid == otherUid);
+        allow write: if isOwner(uid);
+      }
+    }
+
+    match /bans/{banId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /warnings/{warningId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == resource.data.userUid);
+      allow write: if false;
+    }
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.reporterUid;
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == resource.data.reporterUid);
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if false;
+    }
+
+    match /adminActionLog/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /chats/{chatId} {
+
+      function is1on1(d) {
+        return 'participantIds' in d;
+      }
+
+      function isGroupDoc(d) {
+        return 'memberUids' in d;
+      }
+
+      function isParticipant() {
+        return is1on1(resource.data) && request.auth.uid in resource.data.participantIds;
+      }
+
+      function isGroupMember() {
+        return isGroupDoc(resource.data) && request.auth.uid in resource.data.memberUids;
+      }
+
+      function isChatMember() {
+        return isSignedIn() && (isParticipant() || isGroupMember());
+      }
+
+      function isGroupAdmin() {
+        return isGroupDoc(resource.data) &&
+          (request.auth.uid in resource.data.adminIds || request.auth.uid == resource.data.creatorId);
+      }
+
+      function memberWritableKeys() {
+        return ['lastMessage', 'lastMessageAt', 'lastMessageSenderId', 'unreadCount', 'typingUserIds'];
+      }
+
+      function groupAdminWritableKeys() {
+        return ['name', 'groupPhotoUrl', 'groupPhotoPublicId', 'memberUids', 'adminIds', 'creatorId'];
+      }
+
+      function changedKeys() {
+        return request.resource.data.diff(resource.data).affectedKeys();
+      }
+
+      function isSelfLeave() {
+        return isGroupDoc(resource.data) &&
+          request.auth.uid in resource.data.memberUids &&
+          !(request.auth.uid in request.resource.data.memberUids) &&
+          resource.data.memberUids.size() == request.resource.data.memberUids.size() + 1 &&
+          changedKeys().hasOnly(groupAdminWritableKeys());
+      }
+
+      allow read: if isChatMember();
+      allow get: if resource == null || isChatMember();
+
+      allow create: if isSignedIn() && (
+        (is1on1(request.resource.data) && request.auth.uid in request.resource.data.participantIds) ||
+        (isGroupDoc(request.resource.data) &&
+          request.auth.uid in request.resource.data.memberUids &&
+          request.auth.uid == request.resource.data.creatorId &&
+          request.auth.uid in request.resource.data.adminIds)
+      );
+
+      allow update: if isChatMember() && (
+        changedKeys().hasOnly(memberWritableKeys()) ||
+        (isGroupDoc(resource.data) && (isGroupAdmin() || isSelfLeave()) &&
+          changedKeys().hasOnly(memberWritableKeys().concat(groupAdminWritableKeys())))
+      );
+
+      allow delete: if isGroupDoc(resource.data) &&
+        isSignedIn() && request.auth.uid in resource.data.memberUids &&
+        resource.data.memberUids.size() == 1 &&
+        resource.data.memberUids[0] == request.auth.uid;
+
+      match /members/{memberUid} {
+        function parentGroupAfter() {
+          return getAfter(/databases/$(database)/documents/chats/$(chatId)).data;
+        }
+
+        function parentIsGroupAdminAfter() {
+          return request.auth.uid in parentGroupAfter().adminIds || request.auth.uid == parentGroupAfter().creatorId;
+        }
+
+        allow read: if isSignedIn() && request.auth.uid in parentGroupAfter().memberUids;
+        allow create, update: if isSignedIn() && parentIsGroupAdminAfter();
+        allow delete: if isSignedIn() && (parentIsGroupAdminAfter() || request.auth.uid == memberUid);
+      }
+
+      match /messages/{messageId} {
+        function parentChat() {
+          return get(/databases/$(database)/documents/chats/$(chatId)).data;
+        }
+
+        function isParentMember() {
+          return isSignedIn() && (
+            (is1on1(parentChat()) && request.auth.uid in parentChat().participantIds) ||
+            (isGroupDoc(parentChat()) && request.auth.uid in parentChat().memberUids)
+          );
+        }
+
+        allow read: if isParentMember();
+
+        allow create: if isParentMember() && request.auth.uid == request.resource.data.senderId;
+
+        allow update: if isParentMember() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+
+        allow delete: if false;
+
+        match /receipts/{receiptUid} {
+          allow read: if isParentMember();
+          allow write: if isSignedIn() && request.auth.uid == receiptUid;
+        }
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

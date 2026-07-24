@@ -1,0 +1,80 @@
+name: pulse
+description: "Pulse — a Bengali-first real-time messaging app."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management / DI
+  flutter_bloc: ^8.1.6
+  get_it: ^7.7.0
+  dartz: ^0.10.1
+
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  firebase_messaging: ^15.1.3
+  cloud_functions: ^5.1.3
+
+  # Notifications
+  flutter_local_notifications: ^17.2.3
+
+  # Media / device
+  image_picker: ^1.1.2
+  record: ^5.1.2
+  just_audio: ^0.9.40
+  path_provider: ^2.1.4
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # BUG FIX (profile photo blink/re-download): Flutter's built-in Image.network
+  # only uses the in-memory PaintingBinding.imageCache, which (a) has no disk
+  # persistence — nothing survives an app restart or a memory-pressure evict
+  # — and (b) was being wiped wholesale by MediaCacheManager.forceFlushImageMemory()
+  # (an existing, intentional OOM-prevention fix for heavy chat media) every
+  # time a chat screen was left or scrolled to the bottom. cached_network_image
+  # adds a disk-backed cache (via flutter_cache_manager) keyed by URL, so a
+  # flush of the in-memory ImageCache no longer forces a real network re-fetch
+  # — the widget reloads from the on-disk cache almost instantly instead, and
+  # the same disk cache also makes avatars available offline after the first
+  # successful download. No changes made to the existing OOM-prevention flush
+  # logic itself.
+  cached_network_image: ^3.4.1
+
+  # Networking / crypto (Cloudinary REST upload; audio-cache checksum
+  # verification). Cloudinary destroy signing now happens server-side in a
+  # Cloud Function — see functions/src/deleteCloudinaryMedia.ts.
+  http: ^1.2.2
+  crypto: ^3.0.5
+
+  # Local disk cache for friend profile fields (name/bio/username/online
+  # status/lastSeen) so the chat header can render instantly from disk
+  # instead of waiting on a Firestore round-trip every time a chat opens.
+  shared_preferences: ^2.3.2
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+# record_linux 0.7.2 (the version pub resolves by default under record ^5.1.2)
+# does not implement the newer record_platform_interface API and fails to
+# compile ("RecordLinux missing implementations for startStream"). This pins
+# record_linux to 1.3.1, which targets record_platform_interface ^1.5.0 —
+# compatible with the 1.6.0 that's otherwise resolved. record_linux is the
+# Linux-desktop backend only; it is never invoked on Android, this just lets
+# it compile. No other dependency touched.
+dependency_overrides:
+  record_linux: ^1.3.1

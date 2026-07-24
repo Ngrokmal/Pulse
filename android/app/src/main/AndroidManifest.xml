@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Core networking (Firebase, Cloudinary REST upload/destroy calls) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- lib/core/services/voice_recorder_service.dart uses the `record`
+         plugin for voice messages -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- image_picker: camera capture for profile/cover/group/chat photos -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Required for foreground FCM notification delivery on Android 13+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Keeps voice-note recording alive if the app is briefly backgrounded
+         mid-recording; safe to remove if that flow is always foreground-only -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <application
+        android:label="Pulse"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Default FCM notification channel/icon metadata, read by
+             lib/core/services/notification_service.dart -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="pulse_default_channel_v2" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+        <!-- Friend Alert Sound fix: NotificationService previously handed the
+             system a raw file:// Uri for cached alert audio
+             (android/app/.../notification_service.dart -> Uri.file(...)),
+             which the system notification/sound-playback process cannot
+             read from this app's private storage on API 24+. This provider
+             lets it be resolved as content:// instead (see
+             getAlertAudioContentUri in MainActivity.kt). Not exported;
+             grantUriPermissions lets the system read a granted Uri without
+             needing to hold this app's storage permissions. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.alertaudio.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/alert_audio_file_paths" />
+        </provider>
+    </application>
+
+    <!-- Required to query/launch other apps from an implicit intent
+         (e.g. sharing media) on Android 11+ -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
+</manifest>

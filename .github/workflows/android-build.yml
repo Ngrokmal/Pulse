@@ -1,0 +1,79 @@
+name: Android Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Disable analytics noise
+        run: flutter config --no-analytics --no-cli-animations
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-home-cache-cleanup: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Static analysis (fail on real errors only)
+        run: |
+          flutter analyze > analyze_full.log 2>&1 || true
+
+          echo "----- Non-info findings -----"
+          grep -Ev "^\s*info •" analyze_full.log | grep -v "^Analyzing" || echo "None found."
+
+          echo ""
+          echo "----- Summary -----"
+          tail -n 1 analyze_full.log
+
+          if grep -qE "^\s*error •" analyze_full.log; then
+            echo ""
+            echo "Real analyzer errors found — failing build."
+            exit 1
+          fi
+
+          echo ""
+          echo "No real errors (only warnings/infos) — continuing build."
+          exit 0
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14

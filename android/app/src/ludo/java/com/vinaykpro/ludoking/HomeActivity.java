@@ -2288,252 +2288,203 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         Drawable d;
-        switch (view.getId())
-        {
-            case R.id.p1:
-                setProfilePic(1);
-                editor.putInt("dp",1);
-                editor.apply();
-                break;
-            case R.id.p2:
-                setProfilePic(2);
-                editor.putInt("dp",2);
-                editor.apply();
-                break;
-            case R.id.p3:
-                setProfilePic(3);
-                editor.putInt("dp",3);
-                editor.apply();
-                break;
-            case R.id.p4:
-                setProfilePic(4);
-                editor.putInt("dp",4);
-                editor.apply();
-                break;
-            case R.id.p5layout:
-                setProfilePic(5);
-                editor.putInt("dp",5);
-                editor.apply();
-                break;
-            case R.id.p6layout:
-                setProfilePic(6);
-                editor.putInt("dp",6);
-                editor.apply();
-                break;
-            case R.id.p7layout:
-                setProfilePic(7);
-                editor.putInt("dp",7);
-                editor.apply();
-                break;
-            case R.id.p8layout:
-                setProfilePic(8);
-                editor.putInt("dp",8);
-                editor.apply();
-                break;
-            case R.id.p9layout:
-                setProfilePic(9);
-                editor.putInt("dp",9);
-                editor.apply();
-                break;
-            case R.id.p10layout:
-                setProfilePic(10);
-                editor.putInt("dp",10);
-                editor.apply();
-                break;
-            case R.id.p11layout:
-                setProfilePic(11);
-                editor.putInt("dp",11);
-                editor.apply();
-                break;
-            case R.id.p12layout:
-                setProfilePic(12);
-                editor.putInt("dp",12);
-                editor.apply();
-                break;
-            case R.id.p13layout:
-                setProfilePic(13);
-                editor.putInt("dp",12);
-                editor.apply();
-                break;
-            case R.id.p14layout:
-                setProfilePic(14);
-                editor.putInt("dp",14);
-                editor.apply();
-                break;
-            case R.id.p15layout:
-                setProfilePic(15);
-                editor.putInt("dp",15);
-                editor.apply();
-                break;
-            case R.id.p16layout:
-                setProfilePic(16);
-                editor.putInt("dp",16);
-                editor.apply();
-                break;
-            case R.id.p17layout:
-                setProfilePic(17);
-                editor.putInt("dp",17);
-                editor.apply();
-                break;
-            case R.id.p18layout:
-                setProfilePic(18);
-                editor.putInt("dp",18);
-                editor.apply();
-                break;
-            case R.id.p19layout:
-                setProfilePic(19);
-                editor.putInt("dp",19);
-                editor.apply();
-                break;
-            case R.id.p20layout:
-                setProfilePic(20);
-                editor.putInt("dp",20);
-                editor.apply();
-                break;
-            case R.id.p21layout:
-                setProfilePic(21);
-                editor.putInt("dp",21);
-                editor.apply();
-                break;
-            case R.id.p22layout:
-                setProfilePic(22);
-                editor.putInt("dp",22);
-                editor.apply();
-                break;
-            case R.id.p23layout:
-                setProfilePic(23);
-                editor.putInt("dp",23);
-                editor.apply();
-                break;
-            case R.id.p24layout:
-                setProfilePic(24);
-                editor.putInt("dp",24);
-                editor.apply();
-                break;
-            case R.id.p25layout:
-                setProfilePic(25);
-                editor.putInt("dp",25);
-                editor.apply();
-                break;
-            case R.id.p26layout:
-                setProfilePic(26);
-                editor.putInt("dp",26);
-                editor.apply();
-                break;
-            case R.id.p27layout:
-                setProfilePic(27);
-                editor.putInt("dp",27);
-                editor.apply();
-                break;
-            case R.id.p28layout:
-                setProfilePic(28);
-                editor.putInt("dp",28);
-                editor.apply();
-                break;
-            case R.id.p29layout:
-                setProfilePic(29);
-                editor.putInt("dp",29);
-                editor.apply();
-                break;
-            case R.id.p30layout:
-                setProfilePic(30);
-                editor.putInt("dp",30);
-                editor.apply();
-                break;
-            case R.id.p31layout:
-                setProfilePic(31);
-                editor.putInt("dp",31);
-                editor.apply();
-                break;
-            case R.id.p32layout:
-                setProfilePic(32);
-                editor.putInt("dp",32);
-                editor.apply();
-                break;
-            case R.id.p33layout:
-                setProfilePic(33);
-                editor.putInt("dp",32);
-                editor.apply();
-                break;
-            case R.id.p34layout:
-                setProfilePic(34);
-                editor.putInt("dp",34);
-                editor.apply();
-                break;
-            case R.id.p35layout:
-                setProfilePic(35);
-                editor.putInt("dp",35);
-                editor.apply();
-                break;
-            case R.id.p36layout:
-                setProfilePic(36);
-                editor.putInt("dp",36);
-                editor.apply();
-                break;
-            case R.id.p37layout:
-                setProfilePic(37);
-                editor.putInt("dp",37);
-                editor.apply();
-                break;
-            case R.id.p38layout:
-                setProfilePic(38);
-                editor.putInt("dp",38);
-                editor.apply();
-                break;
-            case R.id.p39layout:
-                setProfilePic(39);
-                editor.putInt("dp",39);
-                editor.apply();
-                break;
-            case R.id.p40layout:
-                setProfilePic(40);
-                editor.putInt("dp",40);
-                editor.apply();
-                break;
-            case R.id.p41layout:
-                setProfilePic(41);
-                editor.putInt("dp",41);
-                editor.apply();
-                break;
-            case R.id.p42layout:
-                setProfilePic(42);
-                editor.putInt("dp",42);
-                editor.apply();
-                break;
-            case R.id.p43layout:
-                setProfilePic(43);
-                editor.putInt("dp",43);
-                editor.apply();
-                break;
-            case R.id.p44layout:
-                setProfilePic(44);
-                editor.putInt("dp",44);
-                editor.apply();
-                break;
-            case R.id.p45layout:
-                setProfilePic(45);
-                editor.putInt("dp",45);
-                editor.apply();
-                break;
-            case R.id.p46layout:
-                setProfilePic(46);
-                editor.putInt("dp",46);
-                editor.apply();
-                break;
-            case R.id.p47layout:
-                setProfilePic(47);
-                editor.putInt("dp",47);
-                editor.apply();
-                break;
-            case R.id.p48layout:
-                setProfilePic(48);
-                editor.putInt("dp",48);
-                editor.apply();
-                break;
-            default:
-                setProfilePic(0);
-                editor.putInt("dp",0);
-                editor.apply();
+        int id = view.getId();
+        if (id == R.id.p1) {
+            setProfilePic(1);
+            editor.putInt("dp",1);
+            editor.apply();
+        } else if (id == R.id.p2) {
+            setProfilePic(2);
+            editor.putInt("dp",2);
+            editor.apply();
+        } else if (id == R.id.p3) {
+            setProfilePic(3);
+            editor.putInt("dp",3);
+            editor.apply();
+        } else if (id == R.id.p4) {
+            setProfilePic(4);
+            editor.putInt("dp",4);
+            editor.apply();
+        } else if (id == R.id.p5layout) {
+            setProfilePic(5);
+            editor.putInt("dp",5);
+            editor.apply();
+        } else if (id == R.id.p6layout) {
+            setProfilePic(6);
+            editor.putInt("dp",6);
+            editor.apply();
+        } else if (id == R.id.p7layout) {
+            setProfilePic(7);
+            editor.putInt("dp",7);
+            editor.apply();
+        } else if (id == R.id.p8layout) {
+            setProfilePic(8);
+            editor.putInt("dp",8);
+            editor.apply();
+        } else if (id == R.id.p9layout) {
+            setProfilePic(9);
+            editor.putInt("dp",9);
+            editor.apply();
+        } else if (id == R.id.p10layout) {
+            setProfilePic(10);
+            editor.putInt("dp",10);
+            editor.apply();
+        } else if (id == R.id.p11layout) {
+            setProfilePic(11);
+            editor.putInt("dp",11);
+            editor.apply();
+        } else if (id == R.id.p12layout) {
+            setProfilePic(12);
+            editor.putInt("dp",12);
+            editor.apply();
+        } else if (id == R.id.p13layout) {
+            setProfilePic(13);
+            editor.putInt("dp",12);
+            editor.apply();
+        } else if (id == R.id.p14layout) {
+            setProfilePic(14);
+            editor.putInt("dp",14);
+            editor.apply();
+        } else if (id == R.id.p15layout) {
+            setProfilePic(15);
+            editor.putInt("dp",15);
+            editor.apply();
+        } else if (id == R.id.p16layout) {
+            setProfilePic(16);
+            editor.putInt("dp",16);
+            editor.apply();
+        } else if (id == R.id.p17layout) {
+            setProfilePic(17);
+            editor.putInt("dp",17);
+            editor.apply();
+        } else if (id == R.id.p18layout) {
+            setProfilePic(18);
+            editor.putInt("dp",18);
+            editor.apply();
+        } else if (id == R.id.p19layout) {
+            setProfilePic(19);
+            editor.putInt("dp",19);
+            editor.apply();
+        } else if (id == R.id.p20layout) {
+            setProfilePic(20);
+            editor.putInt("dp",20);
+            editor.apply();
+        } else if (id == R.id.p21layout) {
+            setProfilePic(21);
+            editor.putInt("dp",21);
+            editor.apply();
+        } else if (id == R.id.p22layout) {
+            setProfilePic(22);
+            editor.putInt("dp",22);
+            editor.apply();
+        } else if (id == R.id.p23layout) {
+            setProfilePic(23);
+            editor.putInt("dp",23);
+            editor.apply();
+        } else if (id == R.id.p24layout) {
+            setProfilePic(24);
+            editor.putInt("dp",24);
+            editor.apply();
+        } else if (id == R.id.p25layout) {
+            setProfilePic(25);
+            editor.putInt("dp",25);
+            editor.apply();
+        } else if (id == R.id.p26layout) {
+            setProfilePic(26);
+            editor.putInt("dp",26);
+            editor.apply();
+        } else if (id == R.id.p27layout) {
+            setProfilePic(27);
+            editor.putInt("dp",27);
+            editor.apply();
+        } else if (id == R.id.p28layout) {
+            setProfilePic(28);
+            editor.putInt("dp",28);
+            editor.apply();
+        } else if (id == R.id.p29layout) {
+            setProfilePic(29);
+            editor.putInt("dp",29);
+            editor.apply();
+        } else if (id == R.id.p30layout) {
+            setProfilePic(30);
+            editor.putInt("dp",30);
+            editor.apply();
+        } else if (id == R.id.p31layout) {
+            setProfilePic(31);
+            editor.putInt("dp",31);
+            editor.apply();
+        } else if (id == R.id.p32layout) {
+            setProfilePic(32);
+            editor.putInt("dp",32);
+            editor.apply();
+        } else if (id == R.id.p33layout) {
+            setProfilePic(33);
+            editor.putInt("dp",32);
+            editor.apply();
+        } else if (id == R.id.p34layout) {
+            setProfilePic(34);
+            editor.putInt("dp",34);
+            editor.apply();
+        } else if (id == R.id.p35layout) {
+            setProfilePic(35);
+            editor.putInt("dp",35);
+            editor.apply();
+        } else if (id == R.id.p36layout) {
+            setProfilePic(36);
+            editor.putInt("dp",36);
+            editor.apply();
+        } else if (id == R.id.p37layout) {
+            setProfilePic(37);
+            editor.putInt("dp",37);
+            editor.apply();
+        } else if (id == R.id.p38layout) {
+            setProfilePic(38);
+            editor.putInt("dp",38);
+            editor.apply();
+        } else if (id == R.id.p39layout) {
+            setProfilePic(39);
+            editor.putInt("dp",39);
+            editor.apply();
+        } else if (id == R.id.p40layout) {
+            setProfilePic(40);
+            editor.putInt("dp",40);
+            editor.apply();
+        } else if (id == R.id.p41layout) {
+            setProfilePic(41);
+            editor.putInt("dp",41);
+            editor.apply();
+        } else if (id == R.id.p42layout) {
+            setProfilePic(42);
+            editor.putInt("dp",42);
+            editor.apply();
+        } else if (id == R.id.p43layout) {
+            setProfilePic(43);
+            editor.putInt("dp",43);
+            editor.apply();
+        } else if (id == R.id.p44layout) {
+            setProfilePic(44);
+            editor.putInt("dp",44);
+            editor.apply();
+        } else if (id == R.id.p45layout) {
+            setProfilePic(45);
+            editor.putInt("dp",45);
+            editor.apply();
+        } else if (id == R.id.p46layout) {
+            setProfilePic(46);
+            editor.putInt("dp",46);
+            editor.apply();
+        } else if (id == R.id.p47layout) {
+            setProfilePic(47);
+            editor.putInt("dp",47);
+            editor.apply();
+        } else if (id == R.id.p48layout) {
+            setProfilePic(48);
+            editor.putInt("dp",48);
+            editor.apply();
+        } else {
+            setProfilePic(0);
+            editor.putInt("dp",0);
+            editor.apply();
         }
     }
 

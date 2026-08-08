@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "260839823539",
+    "project_id": "messengerclone-d7f43",
+    "storage_bucket": "messengerclone-d7f43.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:260839823539:android:4fff8938f83ce00f7bf8c6",
+        "android_client_info": {
+          "package_name": "com.pulse.messenger"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDG8ZGcCdBOFHuox7f5ox1nLFYMxVEtu0A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

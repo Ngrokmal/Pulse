@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Exposes only AudioCacheManager's cache subfolder
+  (lib/features/custom_alert/data/services/audio_cache_manager.dart,
+  Directory.systemTemp/pulse_alert_audio_cache -> app cache dir on Android)
+  via FileProvider, so cached Friend Alert Sound files can be referenced by
+  a content:// Uri when the system resolves a NotificationChannel's sound.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="alert_audio_cache" path="pulse_alert_audio_cache/" />
+</paths>

@@ -1,0 +1,114 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader("UTF-8") { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0.0"
+
+android {
+    namespace = "com.pulse.messenger"
+
+    compileSdk = 36
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled = true
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    defaultConfig {
+        applicationId = "com.pulse.messenger"
+
+        minSdk = 23
+        targetSdk = 36
+
+        versionCode = flutterVersionCode.toInteger()
+        versionName = flutterVersionName
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+            ndk {
+                abiFilters "arm64-v8a"
+            }
+        }
+        debug {
+            signingConfig = signingConfigs.debug
+        }
+    }
+
+    // Ludo integration (Play Ludo feature): the native Java Ludo King Clone
+    // source (package com.vinaykpro.ludoking, originally its own standalone
+    // Android app/Gradle project) has been folded into this single Pulse
+    // Android application as an additional source set rather than merged
+    // directly into src/main. This is the ONLY safe way to add its ~380
+    // resource files without silently overwriting Pulse's own
+    // mipmap/ic_launcher.* and values/ic_launcher_background.xml — both
+    // projects originally shipped files with those exact names for their
+    // own (different) app icons. Ludo's copies of those specific
+    // launcher-icon files were deleted from src/ludo/res (see that
+    // directory) since nothing in the Ludo Java source references
+    // R.mipmap.ic_launcher* — the icon shown to the user is, and remains,
+    // Pulse's, declared once in this module's AndroidManifest.xml
+    // <application android:icon=...>. Everything else Ludo needs (layouts,
+    // drawables, raw audio/video, fonts, anim, its own colors/strings/
+    // themes) is additive and has no name collisions with Pulse's (nearly
+    // empty, Flutter-only) res/, so it is included unmodified.
+    sourceSets {
+        main {
+            java.srcDirs += "src/ludo/java"
+            res.srcDirs += "src/ludo/res"
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    implementation platform("com.google.firebase:firebase-bom:33.5.1")
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"
+
+    // Required by the integrated native Java Ludo game
+    // (com.vinaykpro.ludoking.SplashActivity / HomeActivity / MainActivity).
+    // Versions bumped from Ludo's original standalone build
+    // (appcompat 1.6.1, material 1.6.0, constraintlayout 2.1.4) to current
+    // stable releases compatible with this module's compileSdk 36 /
+    // AGP 8.9.2 — Ludo's Java source uses no version-specific APIs from
+    // these libraries (verified: only AppCompatActivity, standard
+    // ConstraintLayout XML attrs, and basic Glide .load()/.into() calls),
+    // so the newer versions are a drop-in. Glide is pinned to Ludo's
+    // original 4.15.1 since that's already current and Ludo's Java uses
+    // Glide-version-specific classes (GifDrawable, DrawableImageViewTarget)
+    // directly by import.
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "com.google.android.material:material:1.12.0"
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+    implementation "com.github.bumptech.glide:glide:4.15.1"
+}
+
+// Ludo's Glide dependency resolves images from res/drawable via Android
+// resource IDs only (no network image loading, no OkHttp integration
+// module) — confirmed no com.github.bumptech.glide:okhttp3-integration or
+// similar in the original Ludo build.gradle, so no networking/annotation
+// -processor dependency is added here beyond the base glide artifact.

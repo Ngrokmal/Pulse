@@ -1,0 +1,102 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK and build tools
+        run: |
+          sdkmanager --install "ndk;25.1.8937393" "cmake;3.22.1" "build-tools;33.0.2" "platforms;android-33"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        id: build
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --stacktrace 2>&1 | tee build_log.txt
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/25.1.8937393
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/25.1.8937393
+        continue-on-error: true
+
+      - name: Show exact build errors
+        if: always()
+        shell: bash
+        run: |
+          echo "=============================================="
+          echo "           EXACT BUILD ERROR SUMMARY"
+          echo "=============================================="
+          if [ -f build_log.txt ]; then
+            echo ""
+            echo ">>> C/C++ / Linker errors:"
+            grep -E 'error:|fatal error:|undefined symbol|No such file|cannot find|ld: error' build_log.txt | sort -u || true
+            echo ""
+            echo ">>> Make / NDK failures:"
+            grep -E 'make: \*\*\*|buildNdkBuild.*FAILED|BUILD FAILED' build_log.txt | sort -u || true
+            echo ""
+            echo ">>> Last 40 lines of log:"
+            tail -40 build_log.txt
+          else
+            echo "build_log.txt not found"
+          fi
+          echo "=============================================="
+
+      - name: Fail job if build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
+
+      - name: Check APK exists
+        if: success()
+        run: |
+          find app/build/outputs/apk -name "*.apk" -print || true
+          if [ -z "$(find app/build/outputs/apk -name '*.apk' 2>/dev/null)" ]; then
+            echo "::error::No APK found after build"
+            exit 1
+          fi
+
+      - name: Zip APK
+        if: success()
+        run: |
+          mkdir -p apk-zip
+          find app/build/outputs/apk -name "*.apk" -exec cp {} apk-zip/ \;
+          cd apk-zip && zip -r "$GITHUB_WORKSPACE/app-debug.zip" . && cd ..
+          ls -la app-debug.zip
+
+      - name: Upload APK (zip)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-zip
+          path: app-debug.zip
+          if-no-files-found: error
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build_log.txt

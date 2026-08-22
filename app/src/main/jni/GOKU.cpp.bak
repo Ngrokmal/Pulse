@@ -1,0 +1,3268 @@
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_android.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
+#include "StrEnc.h"
+#include "obfuscate.h"
+#include "imgui/imgui_additional.h"
+#include "Tools.h"
+#include "UE4.h"
+#include "ZEUS.h"
+#include "FTools/Font.h"
+#include "FTools/Iconcpp.h"
+#include "FTools/ImguiPP.h"
+#include "FTools/Icon.h"
+#include "KittyMemory/MemoryPatch.h"
+#include "Helper/plthook.h"
+#include "Helper/Includes.h"
+#include "Helper/Items.h"
+#include "Helper/json.hpp"
+#include "FoxCheats/ScanEngine.hpp"
+#include "music.h"
+#include "Colors.h"
+#include "Syscall.h"
+#include "SDK.hpp"
+#include <stdio.h>
+#include <string.h>
+
+#define USERNAME "@THOR_LITE_OWNER"
+#define PASSWORD "THORLITE"
+
+
+using namespace SDK;
+using json = nlohmann::ordered_json;
+#include <curl/curl.h>
+uintptr_t ProcessEvent_Offset;
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+//=========================================================================//
+json items_data;
+std::string g_Token, g_Auth;
+android_app * g_App = 0;
+uintptr_t UE4, g_LocalPlayer = 0, g_LocalController = 0, g_LocalWeapon = 0;
+
+SDK::ASTExtraPlayerCharacter *AlFAS_LocalPlayer = 0;
+SDK::ASTExtraPlayerController *AlFAS_LocalController = 0;
+
+
+static std::string EXP = " ";
+static std::string expiredDate = "";
+static HoloToggleState toggle_allesp;
+static HoloToggleState toggle_autofire;
+static HoloToggleState toggle_fastlanding;
+static HoloToggleState toggle_stablesky;
+static HoloToggleState toggle_jumpfly;
+static HoloToggleState toggle_flashspeed;
+
+//=========================================================================//
+static bool Feu;
+ImFont* ItSMKOP = nullptr;
+bool PeekUp = true;
+float Setspeed = 165.0f;
+float Cross = 170.0f;
+bool WIDEVIEW = true;
+bool DON_WIDEVIEW=false;
+//float Cross = 170.0f;
+float FOVSMOKERANDI = 340.0f;
+int languages;
+bool UP = false;
+bool FASTLAND = false;
+bool fastchut = true;
+bool autoMagChange = false;
+bool fastchut1 = true;
+bool RLFLY = false;
+float ControlSpeed= 0.12f;
+float WIDEVIEW1 = 240.0f;
+bool SKYFLY = false;
+bool ACTIVE_ESP = false;
+bool RLHIGHJUMP = false;
+bool RLJUMP1;
+bool RLJUMP2;
+bool RLJUMP3;
+bool RLFLYV2 = false;
+bool RoZERRK;
+bool initImGui = false , bValid = false;
+bool ZOOMV3 = false;
+bool JUMPFLYV2 = false;
+bool SLOWFLASH = false;
+bool RLFLASHV1 = false;
+bool RLFLASHV2  = false;
+bool RLFLASHV5  = false;
+bool RLFLASHV3  = false;
+bool RLFLASHV4  = false;
+bool show_WindowV4 = false;
+bool RLFLYMOD = true;
+bool AimButton2 = true;
+bool AMMO = false,
+mkmk = false,
+mkmkk = false,
+mkmkkk = false, 
+UrlLink = false,
+Godviewup = false,
+Godviewdown = false,
+//AMMO = false,
+FIXSTUCK = false,
+SKYSHOT = false,
+SKYSHOT1 = false,
+STUCK2 = false;
+//bool RLFLYV2;
+bool Lineee;
+bool Boxx;
+bool alert;
+bool Visibility;
+bool Healthh;
+bool Namee;
+bool Distancee;
+bool TeamIDd;
+bool Vehiclee;
+bool Weaponn;
+bool Infoo;
+bool Radarr;
+bool Alertt;
+bool View;
+bool Recoil;
+bool IgBot;
+bool IgKnock;
+bool VisCheck;
+bool Aim;
+bool Unlock;
+bool FastChut = true;
+bool MK = false;
+
+
+#define W2S(w, s) SDK::UGameplayStatics::ProjectWorldToScreen(ZevaController, w, true, s)
+class Rect {
+public:
+    float x;
+    float y;
+    float width;
+    float height;
+
+    Rect() {
+        this->x = 0;
+        this->y = 0;
+        this->width = 0;
+        this->height = 0;
+    }
+
+    Rect(float x, float y, float width, float height) {
+        this->x = x;
+        this->y = y;
+        this->width = width;
+        this->height = height;
+    }
+
+    bool operator==(const Rect &src) const {
+        return (src.x == this->x && src.y == this->y && src.height == this->height &&
+                src.width == this->width);
+    }
+
+    bool operator!=(const Rect &src) const {
+        return (src.x != this->x && src.y != this->y && src.height != this->height &&
+                src.width != this->width);
+    }
+};
+
+
+using namespace kFox;
+
+
+
+//=========================================================================//
+namespace Zeva {
+ImVec4 particleColour = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Red color (RGBA)
+}
+struct sRegion {
+uintptr_t start, end;
+};
+
+std::vector<sRegion> trapRegions;
+bool isObjectInvalid(UObject *obj) {
+if (!Tools::IsPtrValid(obj)) {
+return true;
+}
+
+if (!Tools::IsPtrValid(obj->ClassPrivate)) {
+return true;
+}
+
+if (obj->InternalIndex <= 0) {
+return true;
+}
+
+if (obj->NamePrivate.ComparisonIndex <= 0) {
+return true;
+}
+
+if ((uintptr_t)(obj) % sizeof(uintptr_t) != 0x0 && (uintptr_t)(obj) % sizeof(uintptr_t) != 0x4) {
+return true;
+}
+
+if (std::any_of(trapRegions.begin(), trapRegions.end(), [obj](sRegion region) { return ((uintptr_t) obj) >= region.start && ((uintptr_t) obj) <= region.end; }) ||
+std::any_of(trapRegions.begin(), trapRegions.end(), [obj](sRegion region) { return ((uintptr_t) obj->ClassPrivate) >= region.start && ((uintptr_t) obj->ClassPrivate) <= region.end; })) {
+return true;
+}
+
+return false;
+}
+ImColor outlinecolor = IM_COL32(0, 0, 0, 255);
+#define CREATE_COLOR(r, g, b, a) new float[4]{(float)r, (float)g, (float)b, (float)a};
+static float isRed = 0.0f, isGreen = 0.01f, isBlue = 0.0f;
+int32_t ToColor(float * col) {
+return ImGui::ColorConvertFloat4ToU32( * (ImVec4 *)(col));}
+#define SLEEP_TIME 1000LL / 120LL
+int screenWidth = -1, glWidth, screenHeight = -1, glHeight;
+float density = -1;
+int Write_Float(long int addr, float value) {
+Tools::WriteAddr((void *) (addr), (void *) &value, 4);
+return 0;}
+bool WriteAddr(void *addr, void *buffer, size_t length) {
+unsigned long page_size = sysconf(_SC_PAGESIZE);
+unsigned long size = page_size * sizeof(uintptr_t);
+return mprotect((void *) ((uintptr_t) addr - ((uintptr_t) addr % page_size) - page_size), (size_t) size, PROT_EXEC | PROT_READ | PROT_WRITE) == 0 && memcpy(addr, buffer, length) != 0;}
+template<typename T>
+void Write(uintptr_t addr, T value) {
+WriteAddr((void *) addr, &value, sizeof(T));}
+std::map<int, bool> Items;
+////PAMPA ADITYA POWER//////
+#define GEngine_Offset 0x4ccea00
+#define GNames_Offset 0x19ee5f4
+#define GUObject_Offset 0x4fd8d20
+#define GNativeAndroidApp_Offset 0x4cc5f14
+#define GetWeaponPropSlot_Offset 0x12dbd50
+#define CanvasMap_Offset 0x508c67c
+#define GetBonePos_Offset 0xf61158
+#define GetBoneName_Offset 0x276c43c
+#define GetDistanceTo_Offset 0x25b87dc
+#define Object_ClassPrivate 0xC
+#define Object_NamePrivate_ComparisonIndex 0x10
+#define Class_SuperStruct 0x20
+#define FNameEntry_AnsiName 0x8
+#define Level_Actors 0x70
+#define Canvas_ViewProjectionMatrix 0x200
+#define Controller_LineOfSightTo 0x35C
+#define World_PersistentLevel 0x20
+#define Character_Mesh 0x30C
+#define Actor_RootComponent 0x140
+#define SceneComponent_ComponentVelocity 0x1a0
+#define SceneComponent_RelativeLocation 0x118
+#define SceneComponent_RelativeRotation 0x124
+#define UAEPlayerController_PlayerKey 0x594
+#define UAECharacter_PlayerName 0x5f8
+#define UAECharacter_PlayerKey 0x610
+#define UAECharacter_TeamID 0x620
+#define UAECharacter_bIsAI 0x688
+#define STExtraCharacter_Health 0x7a0
+#define STExtraCharacter_HealthMax 0x7a4
+#define STExtraCharacter_bDead 0x7b8
+#define STExtraCharacter_PartHitComponent 0x870
+#define STExtraCharacter_CurrentVehicle 0x7c4
+#define STExtraCharacter_bIsGunADS 0x874
+#define STExtraBaseCharacter_WeaponManagerComponent 0x117c
+#define STExtraBaseCharacter_NearDeatchComponent 0xca0
+#define STExtraBaseCharacter_bIsWeaponFiring 0xb6c
+#define WeaponManagerComponent_CurrentWeaponReplicated 0x454
+#define STCharacterNearDeathComp_BreathMax 0xc8
+#define STCharacterNearDeathComp_Breath 0xf0
+#define STExtraShootWeapon_ShootWeaponComponent 0x7f4
+#define STExtraShootWeaponComponent_ShootWeaponEntityComponent 0x100
+#define ShootWeaponEntity_BulletFireSpeed 0x340
+#define Controller_ControlRotation 0x2e4
+#define STExtraVehicleBase_VehicleShapeType 0x3ae
+#define STExtraVehicleBase_VehicleCommon 0x588
+#define VehicleCommonComponent_HP 0xe8
+#define VehicleCommonComponent_HPMax 0xe4
+#define VehicleCommonComponent_Fuel 0x100
+#define VehicleCommonComponent_FuelMax 0xfc
+#define PickUpWrapperActor_DefineID 0x2f0
+#define STExtraPlayerController_STExtraBaseCharacter 0x1448
+#define PlayerController_PlayerCameraManager 0x330
+#define PlayerCameraManager_CameraCache 0x330
+#define STExtraWeapon_WeaponEntityComp 0x468
+#define WeaponEntity_WeaponID 0xd0
+#define STExtraShootWeapon_CurBulletNumInClip 0x7f8
+#define STExtraShootWeapon_CurMaxBulletNumInOneClip 0x7fc
+#define STExtraGameStateBase_PlayerNum 0x430
+#define STExtraGameStateBase_AlivePlayerNum 0x5b4
+#define STExtraGameStateBase_AliveTeamNum 0x5b8
+#define GameState_ElapsedTime 0x308
+#define Player_PlayerController 0x20
+#define World_NetDriver 0x24
+#define NetDriver_ServerConnection 0x6c
+#define STExtraPlayerController_bIsPressingFireBtn 0x1eb8
+#define STExtraShootWeaponComponent_OwnerShootWeapon 0x118
+
+enum EAimTarget {
+HeadT = 0,
+Chest = 1
+};
+enum EESPUIType {
+    ESPUI01 = 0,
+    ESPUI02 = 1
+};
+
+enum EAimType
+{
+    Distance = 0,
+    Croshhair = 1
+};
+
+
+enum EAimRange {
+R_360 = 0,
+};
+enum EAimTrigger {
+None = 0,
+Shooting = 1,
+Scoping = 2,
+Both = 3,
+Any = 4
+};
+namespace Zeva {
+static int Tab = 1;
+}
+struct sConfig {
+bool Bypass;
+struct sPlayerESP {
+bool Line;
+bool Box;
+bool Health;
+bool Skeleton;
+bool Name;
+bool Visibility;
+bool AutoFire = true;
+bool Distance;
+bool TeamID;
+bool NoBot;
+bool Weapon;
+bool Vehicle;
+bool Alert360 = true;
+bool linetarget;
+bool Grenade;
+bool DeadBox;
+int Cross;
+bool AdvAlert;
+bool Head;
+bool autofire;
+bool Lootbox;
+bool TeamID2;
+bool info;
+EESPUIType ESPUIType;
+};
+sPlayerESP PlayerESP{0};
+struct sColorsESP {
+float * PVLine;
+float * PVILine;
+float * BVLine;
+float * BVILine;
+float * PVBox;
+float * PVIBox;
+float * BVBox;
+float * BVIBox;
+float * PVSkeleton;
+float * PVISkeleton;
+float * BVSkeleton;
+float * BVISkeleton;
+float * TeamID;
+float * Name;
+float * Distance;
+float * Vehicle;
+float * Items;
+};
+sColorsESP ColorsESP{0};
+struct sAimMenu {
+bool Enable;
+bool IgnoreKnocked = true;
+bool IgnoreBot = true;
+bool AutoFire;
+float FOVSize;
+bool SKYFLY;
+bool SKYUP;
+bool AimButton;
+EAimType Type;
+EAimTarget Target;
+EAimRange Range;
+EAimTrigger Trigger;
+bool DOWE;
+bool STABLE;
+bool FLY_MENU;
+bool VisCheck;
+bool Prediction;
+};
+sAimMenu AimMenu{0};
+sAimMenu SilentAim{0};
+sAimMenu AimBot{0};
+};
+sConfig Config {0};
+struct sPatches { 
+MemoryPatch
+recoil,
+shake,
+cross,
+xhit1,
+sky10,
+sky1,
+sky2,
+sky3,
+sky4,
+sky5,
+sky6,
+sky7,
+sky8,
+sky9,
+xhit2,
+nofog,
+blacksky,
+desert,
+carjmp,
+carspd,
+skyup,
+skydown,
+skystable,
+grass,
+night,
+ipad,
+flash01,
+flash02,
+flash03,
+flash04,
+flash05,
+flash06,
+wshoot,
+wshoot1,
+wshoot2,
+wshoot3,
+wshoot4,
+wshoot5,
+wshoot6,
+wshoot7,
+wshoot8,
+wshoot9,
+NoGrass,
+wshoot10,
+flash07,
+flash08,
+flash09,
+flash10,
+flash11,
+flash12,
+flash13,
+ipadrandi,
+dasertmap10,
+donxhit2,
+Rahul,
+noshake, noshake1, noshake2, noshake3, noshake4, noshake5, noshake6, noshake7, noshake8, noshake9,
+norecoil,
+Hooktdmaster;
+};
+sPatches Patches;
+
+
+bool isObjectInvalids(SDK::UObject *obj) {
+if (!Tools::IsPtrValid(obj)) {
+return true;}
+if (!Tools::IsPtrValid(obj->ClassPrivate)) {
+return true;}
+if (obj->InternalIndex <= 0) {
+return true;}
+if (obj->NamePrivate.ComparisonIndex <= 0) {
+return true;}
+if ((uintptr_t)(obj) % sizeof(uintptr_t) != 0x0 && (uintptr_t)(obj) % sizeof(uintptr_t) != 0x4) {
+return true;}
+if (std::any_of(trapRegions.begin(), trapRegions.end(), [obj](sRegion region) { return ((uintptr_t) obj) >= region.start && ((uintptr_t) obj) <= region.end; }) ||
+std::any_of(trapRegions.begin(), trapRegions.end(), [obj](sRegion region) { return ((uintptr_t) obj->ClassPrivate) >= region.start && ((uintptr_t) obj->ClassPrivate) <= region.end; })) {
+return true;}
+return false;}
+static SDK::UEngine *GEngine = 0;
+SDK::UWorld *GetsWorld() {
+while (!GEngine) {
+GEngine = SDK::UObject::FindObject<SDK::UEngine>("UAEGameEngine Transient.UAEGameEngine_1");
+sleep(1);}
+if (GEngine) {
+auto ViewPort = GEngine->GameViewport;
+if (ViewPort) {
+return ViewPort->World;}}
+return 0;}
+SDK::TNameEntryArray *GGetGNames(){
+return ((SDK::TNameEntryArray *(*)()) (UE4 + GNames_Offset))();}
+std::vector<SDK::AActor *> Zeva_Actors() {
+auto Worlds = GetsWorld();
+if (!Worlds)
+return std::vector<SDK::AActor *>();
+auto PersistentLevell = Worlds->PersistentLevel;
+if (!PersistentLevell)
+return std::vector<SDK::AActor *>();
+auto ALFAS = *(SDK::TArray<SDK::AActor *> *)((uintptr_t) PersistentLevell + Level_Actors);
+std::vector<SDK::AActor *> actorss;
+for (int i = 0; i < ALFAS.Num(); i++) {
+auto ALFAS_xD = ALFAS[i];
+if (ALFAS_xD) {
+actorss.push_back(ALFAS_xD);}}
+return actorss;}
+std::string getObjectPath(SDK::UObject *Object) {
+std::string s;
+for (auto super = Object->ClassPrivate; super; super = (SDK::UClass *) super->SuperStruct) {
+if (!s.empty())
+s += ".";
+s += super->NamePrivate.GetName();}
+return s;}
+const char *getStringName(SDK::UObject *Object) {
+std::string s;
+for (auto super = Object->ClassPrivate; super; super = (SDK::UClass *) super->SuperStruct) {
+if (!s.empty())
+s += ".";
+s += super->GetName();}
+return s.c_str();}
+template<class T>
+void GetAllActors(std::vector<T *> &Actors) {
+SDK::UGameplayStatics *gGameplayStatics = (SDK::UGameplayStatics *) gGameplayStatics->StaticClass();
+auto GWorldvip = GetsWorld();
+if (GWorldvip) {
+SDK::TArray<SDK::AActor *> Actors2;
+gGameplayStatics->GetAllActorsOfClass((SDK::UObject *) GWorldvip, T::StaticClass(), &Actors2);
+for (int i = 0; i < Actors2.Num(); i++) {
+Actors.push_back((T *) Actors2[i]);}}}
+
+
+uintptr_t getGWorld() {
+return (* (uintptr_t *)(UE4 + GEngine_Offset));}
+std::vector<uintptr_t> getActors() {
+auto World = getGWorld();
+if (!World)
+return {};
+uintptr_t PersistentLevel = * (uintptr_t *)(World + World_PersistentLevel);
+if (!PersistentLevel)
+return {};
+auto Actors = * (uintptr_t *)(PersistentLevel + Level_Actors);
+auto ActorsCount = * (int *)(PersistentLevel + Level_Actors + sizeof(uintptr_t));
+std::vector<uintptr_t> result;
+for (int i = 0; i < ActorsCount; i++) {
+auto Actor = * (uintptr_t *)(Actors + (i * sizeof(uintptr_t)));
+if (Actor)
+result.push_back(Actor);}
+return result;}
+std::string getObjectName(uintptr_t addr) {
+std::string result;
+int Index = * (int *)(addr + Object_NamePrivate_ComparisonIndex);
+static std::map<int, std::string> cache;
+if (cache.find(Index) != cache.end()) {
+return cache[Index];}
+uintptr_t GNames = ((uintptr_t ( *)())(UE4 + GNames_Offset))();
+if (GNames) {
+uintptr_t Chunk = * (uintptr_t *)(GNames + (Index / 0x4000) * sizeof(uintptr_t));
+uintptr_t WithinChunk = * (uintptr_t *)(Chunk + (Index % 0x4000) * sizeof(uintptr_t));
+char AnsiName[1024] {0};
+memcpy(AnsiName, (void *)(WithinChunk + FNameEntry_AnsiName), sizeof(AnsiName));
+result = AnsiName;
+cache[Index] = result;}
+return result;}
+bool isObjectA(uintptr_t addr, const char * name) {
+uintptr_t ClassPrivate = * (uintptr_t *)(addr + Object_ClassPrivate);
+if (ClassPrivate) {
+if (getObjectName(ClassPrivate) == name)
+return true;
+auto Child = * (uintptr_t *)(ClassPrivate + Class_SuperStruct);
+while (Child) {
+if (getObjectName(Child) == name)
+return true;
+Child = * (uintptr_t *)(Child + Class_SuperStruct);}}
+return false;}
+bool isObjectPlayer(uintptr_t addr) {
+return isObjectA(addr, "STExtraPlayerCharacter");}
+bool isObjectGame(uintptr_t addr) {
+    return isObjectA(addr, "STExtraGameStateBase");
+}
+bool isObjectVehicle(uintptr_t addr) {
+return isObjectA(addr, "STExtraVehicleBase");}
+bool isObjectPickUp(uintptr_t addr) {
+return isObjectA(addr, "PickUpWrapperActor");}
+bool isObjectGrenade(uintptr_t addr) {
+return isObjectA(addr, "BP_Grenade_Shoulei_C") || isObjectA(addr, "BP_Grenade_Burn_C");}
+bool isObjectDeadBox(uintptr_t addr) {
+return isObjectA(addr, "PickUpListWrapperActor");}
+Vector3 WorldToScreen(Vector3 pos) {
+Vector3 resultPos = {0, 0, 0};
+auto canvasMap = * (uintptr_t *)(UE4 + CanvasMap_Offset);
+if (canvasMap) {
+auto Canvas = * (uintptr_t *)(canvasMap + (0x8 * 3) + 0x8);
+if (Canvas) {
+Matrix viewMatrix = * (Matrix *)(Canvas + Canvas_ViewProjectionMatrix);
+float screenW = (viewMatrix.M[0][3] * pos.X) + (viewMatrix.M[1][3] * pos.Y) + (viewMatrix.M[2][3] * pos.Z + viewMatrix.M[3][3]);
+resultPos.Z = screenW;
+float screenY = (viewMatrix.M[0][1] * pos.X) + (viewMatrix.M[1][1] * pos.Y) + (viewMatrix.M[2][1] * pos.Z + viewMatrix.M[3][1]);
+float screenX = (viewMatrix.M[0][0] * pos.X) + (viewMatrix.M[1][0] * pos.Y) + (viewMatrix.M[2][0] * pos.Z + viewMatrix.M[3][0]);
+resultPos.Y = ((float) glHeight / 2) - ((float) glHeight / 2) * screenY / screenW;
+resultPos.X = ((float) glWidth / 2) + ((float) glWidth / 2) * screenX / screenW;}}
+return resultPos;}
+Vector3 GetBonePos(uintptr_t Actor, int Idx) {
+auto GetBonePos = (Vector3( *)(uintptr_t, uint64_t))(UE4 + GetBonePos_Offset);
+auto GetBoneName = (uint64_t * ( *)(uint64_t *, uintptr_t, int))(UE4 + GetBoneName_Offset); //correct
+auto Mesh = * (uintptr_t *)(Actor + Character_Mesh);
+if (Mesh) {
+uint64_t BoneName;
+GetBoneName(&BoneName, Mesh, Idx);
+return GetBonePos(Actor, BoneName);}
+return {0, 0, 0};}
+bool IsLineOfSightTo(uintptr_t Actor) {
+auto LineOfSightTo = (bool( *)(uintptr_t, uintptr_t, Vector3, bool))( * (uintptr_t *)( * (uintptr_t *)(g_LocalController) + Controller_LineOfSightTo));
+return LineOfSightTo(g_LocalController, Actor, { 0, 0, 0 }, 0);}
+MinimalViewInfo GetPOV() {
+if (g_LocalController) {
+auto PlayerCameraManager = * (uintptr_t *)(g_LocalController + PlayerController_PlayerCameraManager);
+if (PlayerCameraManager) {
+CameraCacheEntry CameraCache = * (CameraCacheEntry *)(PlayerCameraManager + PlayerCameraManager_CameraCache);
+return CameraCache.POV;}}
+return {};}
+std::string GetVehicleName(uint8_t type) {
+switch (type) {
+case 1: return "Bike"; break;
+case 2: return "Trike"; break;
+case 3: return "Dacia"; break;
+case 7: return "Buggy"; break;
+case 8:
+case 9:
+case 10:
+case 13: return "UAZ"; break;
+case 11: return "PG-117"; break;
+case 14:
+case 15: return "Mirado"; break;
+case 17: return "Scooter"; break;
+case 19: return "Tukshai"; break;
+default:
+return "Vehicle";}
+return "";}
+float GetDistanceTo(uintptr_t Actor) {
+auto GetDistanceTo = (float( *)(uintptr_t, uintptr_t))(UE4 + GetDistanceTo_Offset);
+return GetDistanceTo(Actor, g_LocalPlayer);}
+
+
+
+
+auto GetTargetByCrossDist() {
+    ASTExtraPlayerCharacter *result = 0;
+    float max = std::numeric_limits<float>::infinity();
+auto ALFAS = Zeva_Actors();
+    auto ZevaPlayer = AlFAS_LocalPlayer;
+    auto ZevaController = AlFAS_LocalController;
+    FVector ViewPosY{0, 0, 0};
+    if (ZevaPlayer)
+    {
+        ViewPosY = ZevaPlayer->GetBonePos("Head");
+        ViewPosY.Z += 10.f;
+    }
+
+
+
+    if (ZevaPlayer) {
+        for (int i = 0; i < ALFAS.size(); i++) {
+        auto ALFAS_xD = ALFAS[i];
+          //  auto Actor = Actors[i];
+            if (isObjectInvalids(ALFAS_xD))
+            continue;
+
+            if (ALFAS_xD->IsA(ASTExtraPlayerCharacter::StaticClass())) {
+
+                auto Player = (ASTExtraPlayerCharacter *) ALFAS_xD;
+                float Distance = ZevaPlayer->GetDistanceTo(Player) / 100.0f;
+                if (Distance > 500.0f)
+                continue;
+                if (Player->PlayerKey == ZevaPlayer->PlayerKey)
+                continue;
+
+                auto player = (ASTExtraPlayerCharacter *)ALFAS_xD;
+                auto Target = (ASTExtraPlayerCharacter *) ALFAS_xD;
+                float dist = ZevaPlayer->GetDistanceTo(Target) / 100.0f;
+                if (dist > 500)
+                continue;
+
+                if (Player->TeamID == ZevaPlayer->TeamID)
+                continue;
+
+                if (Player->bDead)
+                continue;
+
+
+                if (Config.AimBot.IgnoreKnocked)
+                {
+                    if (Player->Health == 0.0f)
+                    continue;
+                }
+
+
+                if (Config.AimBot.IgnoreBot)
+                {
+                    if (Player->bIsAI)
+                    continue;
+                }
+
+                if (!ZevaController->LineOfSightTo(Player, ViewPosY, true))
+                continue;
+
+                float Dist = ZevaPlayer->GetDistanceTo(Player);
+                if (dist < max) {
+                    max = dist;
+                    result = Player;
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+FRotator ToRotator(FVector local, FVector target){
+    FVector rotation = UKismetMathLibrary::Subtract_VectorVector(local, target);
+    float hyp = sqrt(rotation.X * rotation.X + rotation.Y * rotation.Y);
+    FRotator newViewAngle = {0};
+    newViewAngle.Pitch = -atan(rotation.Z / hyp) * (180.f / (float)3.14159265358979323846);
+    newViewAngle.Yaw = atan(rotation.Y / rotation.X) * (180.f / (float)3.14159265358979323846);
+    newViewAngle.Roll = (float)0.f;
+    if (rotation.X >= 0.f)
+    newViewAngle.Yaw += 180.0f;
+    return newViewAngle;
+}
+
+FVector CalculateWeaponMuzzlePosition(const FVector& weaponLocation, const FRotator& weaponRotation, float weaponBodyLength) {    
+    float radPitch = weaponRotation.Pitch * (3.14159265358979323846 / 180.0f);
+    float radYaw = weaponRotation.Yaw * (3.14159265358979323846 / 180.0f);        
+    float forwardX = std::cos(radPitch) * std::cos(radYaw);
+    float forwardY = std::cos(radPitch) * std::sin(radYaw);
+    float forwardZ = std::sin(radPitch);    
+    
+    FVector muzzlePosition = {
+        weaponLocation.X + forwardX * weaponBodyLength,
+        weaponLocation.Y + forwardY * weaponBodyLength,
+        weaponLocation.Z + forwardZ * weaponBodyLength
+    };
+    
+    return muzzlePosition;
+}
+
+auto GetTargetByDistance(){
+    ASTExtraPlayerCharacter *result = 0;
+    float max = std::numeric_limits<float>::infinity();
+    
+    auto ZevaPlayer = AlFAS_LocalPlayer;
+    auto ZevaController = AlFAS_LocalController;
+   auto ALFAS = Zeva_Actors();
+    
+    FVector ViewPosY{0, 0, 0};
+    if (ZevaPlayer)
+    {
+        ViewPosY = ZevaPlayer->GetBonePos("Head");
+        ViewPosY.Z += 10.f;
+    }    
+    if (ZevaPlayer)
+    {
+        for (int i = 0; i < ALFAS.size(); i++)
+        {
+        
+        auto ALFAS_xD = ALFAS[i];
+          //  auto Actor = Actors[i];
+            if (isObjectInvalids(ALFAS_xD))
+            continue;            
+            if (ALFAS_xD->IsA(ASTExtraPlayerCharacter::StaticClass()))
+            {
+                auto Player = (ASTExtraPlayerCharacter *)ALFAS_xD;                
+                if (Player->PlayerKey == ZevaPlayer->PlayerKey)
+                continue;                
+                if (Player->TeamID == ZevaPlayer->TeamID)
+                continue;                
+                if (Player->bDead)
+                continue;                
+                if (Config.AimBot.IgnoreBot) {
+                    if (Player->bIsAI)
+                    continue;
+                }
+                                
+                if (Config.AimBot.VisCheck) {                    
+                    auto CurrentWeaponReplicated = (ASTExtraShootWeapon*)AlFAS_LocalPlayer->WeaponManagerComponent->CurrentWeaponReplicated;                    
+                    if (CurrentWeaponReplicated) {                        
+                        FVector weaponlocation = CurrentWeaponReplicated->K2_GetActorLocation();                        
+                        FRotator weaponRotation = CurrentWeaponReplicated->K2_GetActorRotation();                       
+                        float weaponBodyLength = CurrentWeaponReplicated->GetWeaponBodyLength();                        
+                        FVector muzzlePosition = CalculateWeaponMuzzlePosition(weaponlocation, weaponRotation, weaponBodyLength / 1.9);                        
+                        if (!ZevaController->LineOfSightTo(Player, muzzlePosition, true))
+                        continue;                        
+                    }
+                }
+                
+                if (Config.AimBot.IgnoreKnocked) {
+                    if (Player->Health == 0.0f)
+                    continue;
+                }                
+                float dist = AlFAS_LocalPlayer->GetDistanceTo(Player);
+                if (dist < max)
+                {
+                    max = dist;
+                    result = Player;
+                }
+            }
+        }
+    }
+    return result;
+}
+
+ASTExtraPlayerCharacter *GetTargetForAim() {
+    if (Config.AimMenu.Type == EAimType::Distance) {
+        return GetTargetByDistance();
+    } else if (Config.AimMenu.Type == EAimType::Croshhair) {
+        return GetTargetByCrossDist();
+    }
+    return 0;
+}
+
+void (*orig_shoot_event)(USTExtraShootWeaponComponent *Thiz, FVector start, FRotator rot, void *unk1, int unk2) = 0;
+void shoot_event(USTExtraShootWeaponComponent *thiz, FVector start, FRotator rot, ASTExtraShootWeapon *weapon, int unk1)
+{
+
+    if (Config.SilentAim.Enable)
+    {
+        ASTExtraPlayerCharacter *Target = GetTargetForAim();
+        if (FastChut) {
+            auto ShootWeaponEntityComponent = thiz->ShootWeaponEntityComponent;
+            if (ShootWeaponEntityComponent) {
+                ShootWeaponEntityComponent->ShootInterval = ControlSpeed;
+            }
+        }
+        if (Target){
+            FVector targetAimPos = Target->GetBonePos("Head");
+           targetAimPos.Z -= -25.0f;
+            FRotator sex = ToRotator(start, targetAimPos);
+            return orig_shoot_event(thiz, targetAimPos, sex, weapon, unk1);
+        }
+    }
+    return orig_shoot_event(thiz, start, rot, weapon, unk1);
+}
+
+
+FRotator (*oCalcShootRot)(USTExtraShootWeaponComponent *pObj);
+FRotator CalcShootRot(USTExtraShootWeaponComponent *pObj)
+{
+
+    if (Config.SilentAim.Enable)
+    {
+        ASTExtraPlayerCharacter *Target = GetTargetForAim();
+        if (Target)
+        {
+            bool triggerOk = false;
+            if (Config.AimMenu.Trigger != EAimTrigger::None)
+            {
+                if (Config.AimMenu.Trigger == EAimTrigger::Shooting)
+                {
+                    triggerOk = AlFAS_LocalPlayer->bIsWeaponFiring;
+                }
+                else if (Config.AimMenu.Trigger == EAimTrigger::Scoping)
+                {
+                    triggerOk = AlFAS_LocalPlayer->bIsGunADS;
+                }
+                else if (Config.AimMenu.Trigger == EAimTrigger::Both)
+                {
+                    triggerOk = AlFAS_LocalPlayer->bIsWeaponFiring && AlFAS_LocalPlayer->bIsGunADS;
+                }
+                else if (Config.AimMenu.Trigger == EAimTrigger::Any)
+                {
+                    triggerOk = AlFAS_LocalPlayer->bIsWeaponFiring || AlFAS_LocalPlayer->bIsGunADS;
+                }
+            }
+            else
+            triggerOk = true;
+            if (triggerOk)
+            {
+                FVector targetAimPos = Target->GetBonePos("Head");
+                if (Config.AimMenu.Target == EAimTarget::HeadT)
+                {
+                                }
+                else if (Config.AimMenu.Target == EAimTarget::Chest)
+                {
+               
+                targetAimPos.Z -= -09.0f;//Head
+                }
+                UShootWeaponEntity *ShootWeaponEntityComponent = pObj->ShootWeaponEntityComponent;
+                if (ShootWeaponEntityComponent)
+                {
+                    ASTExtraVehicleBase *CurrentVehicle = Target->CurrentVehicle;
+                    if (CurrentVehicle)
+                    {
+                        FVector LinearVelocity = CurrentVehicle->ReplicatedMovement.LinearVelocity;
+                        float dist = AlFAS_LocalPlayer->GetDistanceTo(Target);
+                        auto timeToTravel = dist / ShootWeaponEntityComponent->BulletFireSpeed;
+                        targetAimPos = UKismetMathLibrary::Add_VectorVector(targetAimPos, UKismetMathLibrary::Multiply_VectorFloat(LinearVelocity, timeToTravel));
+                    }
+                    else
+                    {
+                        FVector Velocity = Target->GetVelocity();
+                        float dist = AlFAS_LocalPlayer->GetDistanceTo(Target);
+                        auto timeToTravel = dist / ShootWeaponEntityComponent->BulletFireSpeed;
+                        targetAimPos = UKismetMathLibrary::Add_VectorVector(targetAimPos, UKismetMathLibrary::Multiply_VectorFloat(Velocity, timeToTravel));
+                    }
+                    FVector fDir = UKismetMathLibrary::Subtract_VectorVector(targetAimPos, AlFAS_LocalController->PlayerCameraManager->CameraCache.POV.Location);
+                    return UKismetMathLibrary::Conv_VectorToRotator(fDir);
+                }
+            }
+        }
+    }
+    return oCalcShootRot(pObj);
+}
+
+bool AutoFireOff2 = false;
+bool AutoFire2;
+bool AutoFireOff = false;
+bool AutoFire;
+void StopFire(uintptr_t OwnerShootWeapon) {
+auto StopFire = *(void (**)(uintptr_t, uint8_t))(*(uintptr_t *)OwnerShootWeapon + 0x408);
+ return StopFire(OwnerShootWeapon, 0);}
+void OnPressFire() {
+auto OnPressFire = (void (*)(uintptr_t))(UE4 + 0xFEB308);
+return OnPressFire(g_LocalController);}
+void OnReleaseFire() {
+auto OnReleaseFire = (void (*)(uintptr_t))(UE4 + 0xFEB37C);
+return OnReleaseFire(g_LocalController);}
+void ALFAS_HUD(AHUD *HUD, int ScreenWidth, int ScreenHeight){
+if (AutoFire2){
+        if ((AlFAS_LocalPlayer && AlFAS_LocalPlayer->RootComponent) && AlFAS_LocalController)
+        {
+            ASTExtraPlayerCharacter *Target;
+            Target = GetTargetForAim();
+            auto WeaponManagerComponent = AlFAS_LocalPlayer->WeaponManagerComponent;
+            if (WeaponManagerComponent)
+            {
+                auto propSlot = WeaponManagerComponent->GetCurrentUsingPropSlot();
+                if ((int)propSlot.GetValue() >= 1 && (int)propSlot.GetValue() <= 3)
+                {
+                    if (AutoFireOff2)
+                    {
+                        AlFAS_LocalController->OnReleaseFire();
+                    }
+                    if (Target && Target->RootComponent)
+                    {
+                        AlFAS_LocalController->OnPressFire();
+                    }
+                    else
+                    {
+                        AutoFireOff2 = true;
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        AutoFireOff2 = true;
+    }
+
+
+UCanvas *Canvas = HUD->Canvas;
+SDK::ASTExtraShootWeapon *localWeapon = 0;
+if (Canvas){
+uintptr_t GameWorld = getGWorld();
+if (GameWorld) {
+ uintptr_t NetDriver = * (uintptr_t *)(GameWorld + World_NetDriver);
+ if (NetDriver) {
+ uintptr_t ServerConnection = * (uintptr_t *)(NetDriver + NetDriver_ServerConnection);
+ if (ServerConnection) {
+g_LocalController = * (uintptr_t *)(ServerConnection + Player_PlayerController); }}}
+if (g_LocalController) {
+ auto Actors = getActors();
+ for (auto Actor : Actors) {
+ if (!isObjectPlayer(Actor))
+continue;
+ if ( * (uint32_t *)(Actor + UAECharacter_PlayerKey) == * (uint32_t *)(g_LocalController + UAEPlayerController_PlayerKey)) {
+g_LocalPlayer = Actor;
+break; } }
+/*
+if (AlFAS_LocalPlayer) {
+auto WeaponManagerComponent = AlFAS_LocalPlayer->WeaponManagerComponent;
+if (WeaponManagerComponent){
+auto CurrentWeaponReplicated = (SDK::ASTExtraShootWeapon *)WeaponManagerComponent->CurrentWeaponReplicated;
+if (CurrentWeaponReplicated){
+localWeapon = CurrentWeaponReplicated;        
+if (localWeapon) {    
+auto ShootWeaponComponent = CurrentWeaponReplicated->ShootWeaponComponent;
+if (ShootWeaponComponent) {
+SDK::UShootWeaponEntity *ShootWeaponEntityComponent = ShootWeaponComponent->ShootWeaponEntityComponent;
+if (ShootWeaponEntityComponent) {}}
+if (AMMO && AlFAS_LocalPlayer && AlFAS_LocalPlayer->WeaponManagerComponent && AlFAS_LocalController) 
+{
+    if (AlFAS_LocalController->BackpackComponent) 
+    {
+        auto currentWeapon = (SDK::ASTExtraShootWeapon*)AlFAS_LocalPlayer->WeaponManagerComponent->CurrentWeaponReplicated;
+        if (currentWeapon && currentWeapon->ShootWeaponEntityComp) 
+        {
+            static auto lastUseTime = std::chrono::steady_clock::now();
+            auto currentTime = std::chrono::steady_clock::now();
+            
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastUseTime).count() > 500)
+            {
+                SDK::UBackpackUtils* utils = (SDK::UBackpackUtils*)SDK::UBackpackUtils::StaticClass();
+                if (utils) 
+                {
+                    try {
+                        
+                        SDK::TArray<SDK::FBattleItemData> items = utils->GetAllItemsInBackpack(AlFAS_LocalController->BackpackComponent, 1);
+                         
+                        for (int i = 0; i < items.Num(); i++) 
+                        {
+                            const SDK::FBattleItemData& item = items[i];
+                            
+                            
+                            if (item.DefineID.TypeSpecificID == 204013 || item.DefineID.TypeSpecificID == 204011) 
+                            {
+                                if (AlFAS_LocalController && AlFAS_LocalController->BackpackComponent) 
+                                {
+                                  
+                                    AlFAS_LocalController->ServerUseItem(
+                                        item.DefineID, 
+                                        SDK::FBattleItemUseTarget(), 
+                                        (SDK::EBattleItemUseReason)0
+                                    );
+                                                                       
+                                    lastUseTime = currentTime;
+                                    break; 
+                                }
+                            }
+                        }
+                    } 
+                    catch (...) {
+                        
+                    }
+                }
+            }
+        }
+    }
+}
+}
+}
+}
+}
+*/
+// 🔹 Only manual ON/OFF control (no auto detect)
+                if (AlFAS_LocalController->BackpackComponent) { // ✅ Button ON → Start working
+                    if (currentWeapon && currentWeapon->ShootWeaponEntityComp) {
+                        try {
+                            static auto lastToggleTime = std::chrono::high_resolution_clock::now();
+                            auto now = std::chrono::high_resolution_clock::now();
+                            float elapsedSeconds = std::chrono::duration<float>(now - lastToggleTime).count();
+
+                            if (elapsedSeconds >= 0.5f) {
+                                AMMOInserted = !AMMOInserted;
+                                lastToggleTime = now;
+
+                                SDK::UBackpackUtils* Utils = (SDK::UBackpackUtils*)SDK::UBackpackUtils::StaticClass();
+                                if (Utils && YOUR_FATHER__LocalController->BackpackComponent) {
+                                    EBattleItemDisuseReason disuseReason;
+                                    FBattleItemUseTarget useTarget;
+                                    EBattleItemUseReason useReason;
+
+                                    auto items = Utils->GetAllItemsInBackpack(YOUR_FATHER__LocalController->BackpackComponent, 1);
+                                    for (int i = 0; i < items.Num(); i++) {
+                                        int id = items[i].DefineID.TypeSpecificID;
+                                        if (id == 204011 || id == 204013) {
+                                            if (AMMOInserted) {
+                                                YOUR_FATHER__LocalController->ServerUseItem(items[i].DefineID, useTarget, useReason);
+                                            } else {
+                                                YOUR_FATHER__LocalController->ServerDisuseItem(items[i].DefineID, disuseReason);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (...) {
+                         
+                        }
+                    }
+                }
+            }
+        }
+    }
+}}}}}
+if (g_LocalPlayer) {
+auto infinity = std::numeric_limits<float>::infinity();
+ auto WeaponManagerComponent = *(uintptr_t *) (g_LocalPlayer + 0x117c);
+ if (AutoFire) {
+if ((g_LocalPlayer && *(uintptr_t *) (g_LocalPlayer + 0x140)) && g_LocalController){
+auto Target = GetTargetForAim();
+auto WeaponManagerComponent = *(uintptr_t *) (g_LocalPlayer + 0x117c);
+if (WeaponManagerComponent){
+ auto propSlot = (uint8_t( *)(uintptr_t))(UE4 + 0x12dbd50);
+ if (propSlot(WeaponManagerComponent) >= 1 && propSlot(WeaponManagerComponent) <= 3) {
+if (AutoFireOff){
+OnReleaseFire();}
+if (Target && *(uintptr_t *) (Target + 0x140)){
+ OnPressFire();}
+else{
+ AutoFireOff = true;}}}}}
+else{
+AutoFireOff = true;}}}}}
+int OpenURL(const char* url){
+JavaVM* java_vm = g_App->activity->vm;
+JNIEnv* java_env = NULL;
+jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+if (jni_return == JNI_ERR)
+ return -1;
+jni_return = java_vm->AttachCurrentThread(&java_env, NULL);
+if (jni_return != JNI_OK)
+ return -2;
+jclass native_activity_clazz = java_env->GetObjectClass(g_App->activity->clazz);
+if (native_activity_clazz == NULL)
+ return -3;
+jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "AndroidThunkJava_LaunchURL", "(Ljava/lang/String;)V");
+if (method_id == NULL)
+ return -4;
+jstring retStr = java_env->NewStringUTF(url);
+java_env->CallVoidMethod(g_App->activity->clazz, method_id, retStr);
+jni_return = java_vm->DetachCurrentThread();
+if (jni_return != JNI_OK)
+ return -5;
+return 0;}
+void DrawText(ImDrawList *draw, const std::string &text, const Vector2 &position, ImU32 color, float fontSize)
+{
+    draw->AddText(NULL, fontSize, {position.X, position.Y}, color, text.c_str());
+}
+void DrawTextWithBorder(ImDrawList *draw, const std::string &text, const Vector2 &position, ImU32 textColor, ImU32 borderColor, float fontSize)
+{
+    float borderSize = 1.0f;
+
+    for (int x = -1; x <= 1; ++x)
+    {
+for (int y = -1; y <= 1; ++y)
+{
+    if (x == 0 && y == 0)
+continue;
+
+    DrawText(draw, text, {position.X + x * borderSize, position.Y + y * borderSize}, borderColor, fontSize);
+}
+    }
+    DrawText(draw, text, position, textColor, fontSize);
+}
+#include "imgui/stb_image.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "IMAGE/Logo.h"
+#include "IMAGE/Bot_off.h"
+#include "IMAGE/Bot_on.h"
+#include "IMAGE/Enemy_off.h"
+#include "IMAGE/Enemy_on.h"
+
+    struct TextureInfo { ImTextureID textureId; int x; int y; int w; int h; };
+    void DrawImage(int x, int y, int w, int h, ImTextureID Texture) {
+    ImGui::GetForegroundDrawList()->AddImage(Texture, ImVec2(x, y), ImVec2(x + w, y + h));}
+
+
+    
+    
+//===========| 𝗜𝗠𝗔𝗚𝗘 𝗙𝗥𝗢𝗠 𝗦𝗧𝗢𝗥𝗔𝗚𝗘 
+    
+    
+    static TextureInfo textureInfo;
+    TextureInfo createTexture(char *ImagePath) {
+    int w, h, n;
+    stbi_uc *data = stbi_load(ImagePath, &w, &h, &n, 0);
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    if (n == 3) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    } else {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    }stbi_image_free(data);
+    textureInfo.textureId = reinterpret_cast<ImTextureID>((GLuint *) texture);
+    textureInfo.w = w;
+    textureInfo.h = h;
+    return textureInfo;}
+
+//===========| 𝗜𝗠𝗔𝗚𝗘 𝗙𝗥𝗢𝗠 𝗕𝗬𝗧𝗘 𝗔𝗥𝗥𝗔𝗬
+    
+    TextureInfo CreateTexture(const unsigned char* buf, int len) {
+    TextureInfo image;
+    unsigned char* image_data = stbi_load_from_memory(buf, len, &image.w, &image.h, NULL, 0);
+    if (image_data == NULL) {perror("File does not exist");}
+    GLuint image_texture;
+    glGenTextures(1, &image_texture);
+    glBindTexture(GL_TEXTURE_2D, image_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    #if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    #endif
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.w, image.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+    stbi_image_free(image_data);
+    image.textureId = (ImTextureID)image_texture;
+    return image;}
+    
+//==============| 𝗧𝗘𝗫𝗧𝗨𝗥𝗘 𝗗𝗘𝗙𝗜𝗡𝗘
+TextureInfo Logo;
+TextureInfo Bot_off;
+TextureInfo Bot_on;
+TextureInfo Enemy_off;
+TextureInfo Enemy_on;
+
+    
+void InitTexture() {
+Logo = CreateTexture(Logo_data, sizeof(Logo_data));
+Bot_off = CreateTexture(Bot_off_data, sizeof(Bot_off_data));
+Bot_on = CreateTexture(Bot_on_data, sizeof(Bot_on_data));
+Enemy_off = CreateTexture(Enemy_off_data, sizeof(Enemy_off_data));
+Enemy_on = CreateTexture(Enemy_on_data, sizeof(Enemy_on_data));
+}
+bool (*orig_GetUnlimitedAmmo)(int* miri);
+bool hk_GetUnlimitedAmmo(int* miri) {
+    if(AMMO){
+      return true;
+    }
+    return orig_GetUnlimitedAmmo(miri);
+}
+ImColor 紫色2 = ImColor(255,0,255);
+ImColor 浅蓝 = ImColor(ImVec4(36/255.f, 249/255.f, 217/255.f, 255/255.f));
+ImColor 蓝色 = ImColor(ImVec4(170/255.f, 203/255.f, 244/255.f, 0.95f));
+ImColor 白色 = ImColor(ImVec4(255/255.f, 255/255.f, 258/255.f, 0.95f));
+ImColor 浅粉 = ImColor(ImVec4(255/255.f, 200/255.f, 250/255.f, 0.95f));
+ImColor 黑色 = ImColor(ImVec4(0/255.f, 0/255.f, 0/255.f, 0.7f));
+ImColor 半黑 = ImColor(ImVec4(0/255.f, 0/255.f, 0/255.f, 0.18f));
+ImColor 血色 = ImColor(ImVec4(0/255.f, 249/255.f, 0/255.f, 0.35f));
+ImColor 红色 = ImColor(ImVec4(233/255.f, 55/255.f, 51/255.f, 0.95f));
+ImColor 绿色 = ImColor(ImVec4(50/255.f, 222/215.f, 50/255.f, 0.95f));
+ImColor 黄色 = ImColor(ImVec4(255/255.f, 255/255.f, 0/255.f, 0.95f));
+ImColor 橘黄 = ImColor(ImVec4(255/255.f, 150/255.f, 30/255.f, 0.95f));
+ImColor 粉红 = ImColor(ImVec4(220/255.f, 108/255.f, 1202/255.f, 0.95f));
+ImColor 紫色 = ImColor(ImVec4(169/255.f, 120/255.f, 223/255.f, 0.95f));
+ImColor 空白 = ImColor(ImVec4(1.0/255.f, 1.0/255.f, 1.0/255.f, 0.0f));
+ImColor 青绿 = ImColor(ImVec4(145/255.f,232/255.f,135/255.f,255/255.f));
+void HueText(const char* text, ImVec4 color){
+static auto start_time = std::chrono::high_resolution_clock::now();
+auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count() / 1000.0f; 
+ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0,255)); //ImVec ji4(1.0f, 1.0f, 1.0f, 0.0f)); 
+for (int i = 0; i < strlen(text); i++){
+ImGui::SameLine();
+float t = fmodf(elapsed_seconds + (float)i / (float)strlen(text), 1.0f); 
+ImVec4 currentColor = ImVec4(color.x * t, color.y * t, color.z * t, color.w); 
+ImGui::PushStyleColor(ImGuiCol_Text, currentColor); 
+ImGui::Text("%c", text[i]); 
+ImGui::PopStyleColor(); }
+ImGui::PopStyleColor(); }
+static float 旋转角度 = 0.0f;
+const float 旋转速度 = 0.09999f;
+auto 绘制彩虹FOV = [](float 半径, float 旋转 = 0.75f, int 段数 = 100) -> void {
+// ImVec2 中心 = ImGui::GetIO().DisplaySize / 2; //abhi abhi
+ ImVec2 中心 = ImVec2(ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y / 2);
+for (int i = 0; i < 段数; ++i) {
+float 起始角度 = (i / (float)段数) * 2.0f * IM_PI + 旋转;
+float 结束角度 = ((i + 1) / (float)段数) * 2.0f * IM_PI + 旋转;
+ImGui::GetBackgroundDrawList()->AddLine(
+ImVec2(cos(起始角度) * 半径 + 中心.x, sin(起始角度) * 半径 + 中心.y),
+ImVec2(cos(结束角度) * 半径 + 中心.x, sin(结束角度) * 半径 + 中心.y),
+ImColor::HSV((float)i / (float)段数, 1.0f, 1.0f),
+1.0f
+);
+}
+};
+	#define CREATE_COLOR(r, g, b, a) new float[4] {(float)r, (float)g, (float)b, (float)a};
+
+namespace Active
+{
+inline int lastMotorcycleID = 0;
+inline int newMotorcycleID = 0;
+inline int lastScooterID = 0;
+inline int newScooterID = 0;
+inline int lastmonstertruckID = 0;
+inline int newmonstertruckID = 0;
+inline int lastBuggyID = 0;
+inline int newBuggyID = 0;
+inline int lastUazID = 0;
+inline int newUazID = 0;
+inline int lastDaciaID = 0;
+inline int newDaciaID = 0;
+inline int lastCoupeID = 0;
+inline int newCoupeID = 0;
+}
+
+long Colorpoints(int index) {
+    srand(index);
+
+    int a = 255;
+    int r = ((Color[rand() % sizeof(Color)] & 0xFF0000) >> 17);
+    int g = ((Color[rand() % sizeof(Color)] & 0x00FF00) >> 9);
+    int b = (Color[rand() % sizeof(Color)] & 0x0000FF);
+
+    return IM_COL32(r, g, b, a);
+}
+long Colorpoints1(int index) {
+    srand(index);
+
+    int a = 130;
+    int r = ((Color[rand() % sizeof(Color)] & 0xFF0000) >> 17);
+    int g = ((Color[rand() % sizeof(Color)] & 0x00FF00) >> 9);
+    int b = (Color[rand() % sizeof(Color)] & 0x0000FF);
+
+    return IM_COL32(r, g, b, a);
+}
+
+void *run_thread(void *arguments)
+{
+switch ((int)arguments)
+{
+int dValue;
+float fValue;
+//======================================================//
+case 4451:
+if(RLFLY){
+long c1 = getPointer(getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x18) + 0x1C8)+0x3C8;
+long c3 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x60;
+long c2 = getPointer(getPointer(getPointer(getPointer(UE4 + 0x5090DC8) + 0x20) + 0x2CC)+0x310)+0x1AC;
+writefloat(c2, 99999);
+writefloat(c1, 1.15);
+writefloat(c3, 1.35);
+} else {
+long d1 = getPointer(getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x18) + 0x1C8)+0x3C8;
+long d3 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x60;
+long d2 = getPointer(getPointer(getPointer(getPointer(UE4 + 0x5090DC8) + 0x20) + 0x2CC)+0x310)+0x1AC;
+long d4 = getPointer(getPointer(UE4 + 0x50B7600) + 0xA8)+0x30;
+writefloat(d2, 8192);
+writefloat(d4,-980);
+writefloat(d1, 1);
+writefloat(d3, 1);
+}
+break;
+
+
+case 4449:
+if(RLFLASHV2){
+long a1 = getPointer(UE4 + 0x50A5EAC) +0x20;//145
+long a2 = getPointer(UE4 + 0x50A5EAC) +0x24;//145
+long a3 = getPointer(getPointer(getPointer(UE4 + 0x4F08EB8) + 0xA8) + 0x24C)+0x24;
+long a4 = getPointer(getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x310)+0x138;
+long a5 = getPointer(getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x18) + 0x1C8)+0x3C8;
+long a6 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x60;
+long a7 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x14F4;
+long a8 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x14F0;
+long a9 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x1558;// fix 
+writefloat(a1,165);
+writefloat(a2,165);
+writefloat(a3,1000000);
+writefloat(a4,100);
+writefloat(a5,1.25);
+writefloat(a6,1.41);
+writefloat(a7,9999);
+writefloat(a8,9999);
+writefloat(a9,75); // fix 
+Patches.flash01.Modify();
+Patches.flash02.Modify();
+Patches.flash03.Modify();
+Patches.flash04.Modify();
+Patches.flash05.Modify();
+Patches.flash06.Modify();
+Patches.flash07.Modify();
+Patches.flash08.Modify();
+Patches.flash09.Modify();
+Patches.flash10.Modify();        
+Patches.flash11.Modify();
+Patches.flash12.Modify();
+Patches.flash13.Modify();
+} else {
+Patches.flash01.Restore();
+Patches.flash02.Restore();
+Patches.flash03.Restore();
+Patches.flash04.Restore();
+Patches.flash05.Restore();
+Patches.flash06.Restore();
+Patches.flash07.Restore();
+Patches.flash08.Restore();
+Patches.flash09.Restore();
+Patches.flash10.Restore();        
+Patches.flash11.Restore();
+Patches.flash12.Restore();
+Patches.flash13.Restore();
+long a1 = getPointer(getPointer(getPointer(UE4 + 0x4F08EB8) + 0xA8) + 0x24C)+0x24;
+long a2 = getPointer(getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x18) + 0x1C8)+0x3C8;
+long a3 = getPointer(getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x310)+0x138;
+long a5 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x60;
+long a7 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x14F4;
+long a8 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x14F0;
+long a9 = getPointer(getPointer(getPointer(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+0x1558; // fix
+writefloat(a1,10000);
+writefloat(a2,1);
+writefloat(a3,35);
+writefloat(a5,1);
+writefloat(a7,479.5);
+writefloat(a8,1);
+writefloat(a9,88); // fix
+}
+break;
+								
+case 4450:
+if(JUMPFLYV2){
+Write_Float(UE4 + 0X2C3BA14, 10.5f); // importent
+Write_Float(UE4 + 0xCBCB00, -3.83692277e21);
+Write_Float(UE4 + 0x2684E28, 999.0f);
+Write_Float(UE4 + 0x2704F44, 0.25);
+Write_Float(UE4 + 0X2710C8C, 0.0f);
+Write_Float(UE4 + 0x2C3B974, 0.0f);
+Write_Float(UE4 + 0x2C3B98C, 0.0f);
+Write_Float(UE4 + 0x2C3BA18, 0.0f);
+Write_Float(UE4 + 0x2D107D0, 0.0f);
+auto ad = *(int *)(*(int *)(*(int *)(UE4 + 0x4F08EB8) + 0xA8) + 0x24C) + 0x24;
+auto ad2 = *(int *)(*(int *)(*(int *) (*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x310) + 0x138;
+auto ad3 = *(int *)(*(int *)(*(int *) (*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x310) + 0x1AC;
+auto ad4 = *(int *)(*(int *)(*(int *) (*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x18) + 0x1C8) + 0x3C8;
+auto ad5 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x60;
+auto ad11 = *(int *)(UE4 + 0x1FFEAC) + 0x20;
+auto ad12 = *(int *)(UE4 + 0x1FFEAC) + 0x24;
+auto ad13 = *(int *)(*(int *)(*(int *) (*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x310) + 0x13C;
+auto ad14 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x60;
+auto ad15 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+ 0x14F0;
+auto ad16 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x320)+ 0x3D8;
+auto ad17 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+ 0x1558;
+auto ad18 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+ 0x1558;
+writefloat(ad,10086886);
+writefloat(ad2,70);
+writefloat(ad3,99999);
+writefloat(ad4,1.2);
+writefloat(ad5,1.36);
+writefloat(ad11,120);
+writefloat(ad12,120);
+writefloat(ad13,2000);
+writefloat(ad14,0.1);
+writefloat(ad15,20);
+writefloat(ad16,999);
+writefloat(ad17,75);
+writefloat(ad18,75);
+kFox::SetSearchRange(RegionType::ANONYMOUS);
+kFox::MemorySearch("2048.0", Type::TYPE_FLOAT);
+kFox::MemoryOffset("300.0", 8, Type::TYPE_FLOAT);
+kFox::MemoryOffset("0.05000000074505806", 16, Type::TYPE_FLOAT);
+kFox::MemoryOffset("2.0", 20, Type::TYPE_FLOAT);
+kFox::MemoryWrite("99999", 16, Type::TYPE_FLOAT);
+kFox::ClearResult();
+} else {
+Write_Float(UE4 + 0X2C3BA14, 10.90734863281); // importent
+Write_Float(UE4 + 0xCBCB00, -3.83692277e21 ); // importent
+Write_Float(UE4 + 0x2684E28, 0.0f); // importent
+Write_Float(UE4 + 0X2704F44, 9.99999997e-7); // importent
+Write_Float(UE4 + 0X2710C8C, -1.86389771e-20); // importent
+Write_Float(UE4 + 0x2C3B974, 6.16304121e-33); // importent
+Write_Float(UE4 + 0x2C3B98C, 2.64700415e-23); // importent
+Write_Float(UE4 + 0x2C3BA18, 0.0f); // importent
+Write_Float(UE4 + 0x2D107D0, -6.15262313e27); // importent
+auto ad = *(int *)(*(int *)(*(int *)(UE4 + 0x4F08EB8) + 0xA8) + 0x24C) + 0x24;
+auto ad2 = *(int *)(*(int *)(*(int *) (*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x310) + 0x138;
+auto ad3 = *(int *)(*(int *)(*(int *) (*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x310) + 0x1AC;
+auto ad4 = *(int *)(*(int *)(*(int *) (*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x18) + 0x1C8) + 0x3C8;
+auto ad5 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x60;
+auto ad11 = *(int *)(UE4 + 0x1FFEAC) + 0x20;
+auto ad12 = *(int *)(UE4 + 0x1FFEAC) + 0x24;
+auto ad13 = *(int *)(*(int *)(*(int *) (*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x310) + 0x13C;
+auto ad14 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC) + 0x60;
+auto ad15 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+ 0x14F0;
+auto ad16 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x320)+ 0x3D8;
+auto ad17 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+ 0x1558;
+auto ad18 = *(int *)(*(int *)(*(int *)(UE4 + 0X5090DC8) + 0x20) + 0x2CC)+ 0x1558;
+writefloat(ad,100);
+writefloat(ad2,70);
+writefloat(ad3,10);
+writefloat(ad4,1);
+writefloat(ad5,1);
+writefloat(ad11,10);
+writefloat(ad12,10);
+writefloat(ad13,10);
+writefloat(ad14,1);
+writefloat(ad15,1);
+writefloat(ad16,10);
+writefloat(ad17,75);
+writefloat(ad18,75);
+kFox::SetSearchRange(RegionType::ANONYMOUS);
+kFox::MemorySearch("2048.0", Type::TYPE_FLOAT);
+kFox::MemoryOffset("300.0", 8, Type::TYPE_FLOAT);
+kFox::MemoryOffset("9999", 16, Type::TYPE_FLOAT);
+kFox::MemoryOffset("2.0", 20, Type::TYPE_FLOAT);
+kFox::MemoryWrite("0.05000000074505806", 16, Type::TYPE_FLOAT);
+}
+break;
+
+case 21://HEADSHOT ON
+if (ACTIVE_ESP){
+long base=getPointer(getPointer(getPointer(getPointer(UE4+0x5090DC8)+0x20)+0x32C))+0x380;
+const long offsets[]={0xC,0x44,0x7C,0xB4};
+for(int i=0;i<sizeof(offsets)/sizeof(offsets[0]);++i){
+writefloat(base+offsets[i],120.0f);
+}
+kFox::SetSearchRange(RegionType::ANONYMOUS); 
+kFox::MemorySearch("23",Type::TYPE_FLOAT); 
+kFox::MemoryOffset("25",4,Type::TYPE_FLOAT);
+kFox::MemoryOffset("30.5",8,Type::TYPE_FLOAT);
+kFox::MemoryWrite("140",0,Type::TYPE_FLOAT); 
+kFox::MemoryWrite("140",4,Type::TYPE_FLOAT); 
+kFox::MemoryWrite("140",8,Type::TYPE_FLOAT);
+kFox::ClearResult();
+/*kFox::SetSearchRange(RegionType::ANONYMOUS);
+kFox::MemorySearch( "10.0", Type::TYPE_FLOAT);
+kFox::MemoryOffset( "46.0", 4, Type::TYPE_FLOAT);
+kFox::MemoryWrite( "99999", 0, Type::TYPE_FLOAT);
+kFox::ClearResult();*/
+/*MemoryPatch::createWithHex("libUE4.so", 0x21857B4,"00 00 00 00").Modify(); //small
+MemoryPatch::createWithHex("libUE4.so", 0xDB51F8, "00 00 02 43").Modify(); //*/
+//MemoryPatch::createWithHex("libUE4.so", 0x117270C, "00 00 00 00").Modify();
+//MemoryPatch::createWithHex("libUE4.so", 0x117270C, "00 00 00 00").Modify()
+
+//MemoryPatch::createWithHex("libUE4.so", 0x11726CC, "00 00 00 00").Modify();
+Patches.noshake1.Modify();
+Patches.noshake2.Modify();
+Patches.noshake3.Modify();
+Patches.noshake4.Modify();
+Patches.noshake5.Modify();
+Patches.noshake6.Modify();
+Patches.dasertmap10.Modify();
+Patches.donxhit2.Modify();
+} else {
+Patches.donxhit2.Restore();
+Patches.dasertmap10.Restore();
+Patches.noshake1.Restore();
+Patches.noshake2.Restore();
+Patches.noshake3.Restore();
+Patches.noshake4.Restore();
+Patches.noshake5.Restore();
+Patches.noshake6.Restore();
+}
+break;
+
+case 202100:
+if(FASTLAND){
+kFox::SetSearchRange(RegionType::ANONYMOUS); 
+kFox::MemorySearch("3000.0",Type::TYPE_FLOAT); 
+kFox::MemoryOffset("5000.0",4,Type::TYPE_FLOAT);
+kFox::MemoryOffset("1024.0",8,Type::TYPE_FLOAT);
+kFox::MemoryOffset("89.0",36,Type::TYPE_FLOAT);
+kFox::MemoryWrite("200000",0,Type::TYPE_FLOAT); 
+kFox::MemoryWrite("200000",4,Type::TYPE_FLOAT); 
+kFox::MemoryWrite("200000",8,Type::TYPE_FLOAT); 
+kFox::ClearResult();
+}
+break;
+
+case 1001:
+if (SKYSHOT){
+kFox::MemorySearch("4719772412750681353",Type::TYPE_QWORD); 
+kFox::MemoryOffset("4742290408720039936",4, Type::TYPE_QWORD);
+kFox::MemoryWrite(" -460", 8, Type::TYPE_FLOAT); 
+kFox::ClearResult(); //Running Shot
+Write_Float(UE4 + 0x26F9C00, 0.0f);//old 
+Write_Float(UE4 + 0x26F9BF8, 0.0f);//new sky shot real
+} else {
+Write_Float(UE4 + 0x26F9C00, -3.74440972e28);//old 
+Write_Float(UE4 + 0x26F9BF8, -5.7271202e27);//new sky shot real
+}
+break;
+
+case 101:
+if (Godviewup) {
+auto lund = (g_LocalPlayer + 0x140);
+auto lundd = *(uintptr_t*)lund + 0x158;
+float up;
+Tools::PVM_ReadAddr((void *)(lundd), & up, sizeof(up));
+while (true) {
+Write<float>(lundd, up + 295);
+if (!Godviewup) {
+break;
+}}}
+case 102:
+if (Godviewdown) {
+auto lund = (g_LocalPlayer + 0x140);
+auto lundd = *(uintptr_t*)lund + 0x158;
+float up;
+Tools::PVM_ReadAddr((void *)(lundd), & up, sizeof(up));
+while (true) {
+Write<float>(lundd, up - 295);
+if (!Godviewdown) {
+break;
+}}}
+
+//======================================================//
+}return 0;}
+
+int main() {
+    char inputUsername[50];
+    char inputPassword[50];
+
+    printf("=== Welcome to SagarLoginFix ===\n");
+
+    printf("Enter username: ");
+    scanf("%s", inputUsername);
+
+    printf("Enter password: ");
+    scanf("%s", inputPassword);
+
+    if (strcmp(inputUsername, USERNAME) == 0 && strcmp(inputPassword, PASSWORD) == 0) {
+        printf("Login successful! Welcome, %s.\n", inputUsername);
+    } else {
+        printf("Login failed. Invalid username or password.\n");
+    }
+
+    return 0;
+}
+
+//=========≠================≠==============ZevaEsp================≠==============≠================≠=======
+void ZevaEsp(ImDrawList * draw) {
+
+MemoryPatch::createWithHex("libanogs.so", 0x30D21C,"00 00 00 00").Modify();  // 10 year blocker
+MemoryPatch::createWithHex("libanogs.so", 0x30D220,"00 00 00 00").Modify();  // 10 year blocker
+MemoryPatch::createWithHex("libanogs.so", 0x49904,"00 20 70 47").Modify();  // 10 year blocker
+//MemoryPatch::createWithHex("libUE4.so", 0x16D7C40,"00 00 00 00").Modify();  // termination fix
+MemoryPatch::createWithHex("libanogs.so", 0x8e5f6,"00 20 70 47").Modify();  // 1 day fix 
+MemoryPatch::createWithHex("libanogs.so", 0x8E6E4,"00 20 70 47").Modify();  //  1 day fix  
+MemoryPatch::createWithHex("libanogs.so", 0xACAD2,"00 20 70 47").Modify();  // crash
+
+
+auto isFrames = ImGui::GetFrameCount();
+    if(isFrames % 1 == 0) {
+        if(isGreen == 0.01f && isBlue == 0.0f){
+            isRed += 0.01f;
+             }
+        if(isRed > 0.99f && isBlue == 0.0f){
+            isRed = 1.0f;
+            isGreen += 0.01f;
+            }
+        if(isGreen > 0.99f && isBlue == 0.0f){
+            isGreen = 1.0f;
+            isRed -= 0.01f;
+        }
+       if(isRed < 0.01f && isGreen == 1.0f){
+            isRed = 0.0f;
+            isBlue += 0.01f;
+            }
+        if(isBlue > 0.99f && isRed == 0.0f){
+            isBlue = 1.0f;
+            isGreen -= 0.01f;
+            }
+        if(isGreen < 0.01f && isBlue == 1.0f){
+            isGreen = 0.0f;
+            isRed += 0.01f;
+            }
+        if(isRed > 0.99f && isGreen == 0.0f){
+            isRed = 1.0f;
+            isBlue -= 0.01f;
+            }
+        if(isBlue < 0.01f && isGreen == 0.0f){
+            isBlue = 0.0f;
+            isRed -= 0.01f;
+            if(isRed < 0.01f)
+            isGreen = 0.01f;
+        }
+        if(isGreen == 0.01f && isBlue == 0.0f){
+            isRed += 0.01f;
+             }
+        if(isRed > 0.99f && isBlue == 0.0f){
+            isRed = 1.0f;
+            isGreen += 0.01f;
+            }
+        if(isGreen > 0.99f && isBlue == 0.0f){
+            isGreen = 1.0f;
+            isRed -= 0.01f;
+        }
+       if(isRed < 0.01f && isGreen == 1.0f){
+            isRed = 0.0f;
+            isBlue += 0.01f;
+            }
+        if(isBlue > 0.99f && isRed == 0.0f){
+            isBlue = 1.0f;
+            isGreen -= 0.01f;
+            }
+        if(isGreen < 0.01f && isBlue == 1.0f){
+            isGreen = 0.0f;
+            isRed += 0.01f;
+            }
+        if(isRed > 0.99f && isGreen == 0.0f){
+            isRed = 1.0f;
+            isBlue -= 0.01f;
+            }
+        if(isBlue < 0.01f && isGreen == 0.0f){
+            isBlue = 0.0f;
+            isRed -= 0.01f;
+            if(isRed < 0.01f)
+            isGreen = 0.01f;
+        }
+  ImGui::PushStyleColor( ImGuiCol_CheckMark,ImColor(isRed, isBlue, isGreen, 8.0f).Value);
+//ImGui::TextColored(ImGuiCol_Border,ImColor(isRed, isBlue, isGreen), "   TG:: @X GAMING FATHER");
+    }
+
+/*if(WIDEVIEW) {
+Write_Float(UE4 + 0x26C7B90, WIDEVIEW1);
+} else {
+Write_Float(UE4 + 0x26C7B90, 360.0f);
+}*/
+
+if(DON_WIDEVIEW) {
+Patches.ipadrandi.Modify();
+} else {
+Patches.ipadrandi.Restore();
+}
+for (auto &i: items_data) {
+int itemCount = 0;
+for (auto &item: i[("Items")]) {
+item[("itemName")].get<std::string>().c_str();
+Items[item[("itemId")].get<int>()] = true;
+itemCount++;
+if (itemCount % 4 != 0 && &item != &i[("Items")].back()) {
+}
+}
+}
+
+if (RLFLYMOD) {
+Write_Float ( getPointer(UE4 + 0x50A5EAC) +0x20,Setspeed);   
+ } else {
+Write_Float ( getPointer(UE4 + 0x50A5EAC) +0x20,144);   
+ }
+
+if(RLFLY){
+ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(0, 0, 0, 0));
+ImGui::PushStyleColor(ImGuiCol_PopupBg, IM_COL32(0, 0, 0, 255));
+ImGui::PushStyleColor(ImGuiCol_MenuBarBg, IM_COL32(0, 0, 0, 255));
+ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0, 0, 0, 255));
+ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
+ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.3f);
+ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.3f);
+ImGui::SetNextWindowPos(ImVec2(635,170), ImGuiCond_FirstUseEver);
+if (ImGui::Begin("#ALFAS_CANTROL", &Config.PlayerESP.AdvAlert, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar)) {
+if (ImGui::Button(ICON_FA_ARROW_UP"", ImVec2(56, 49))){
+long a1 = getPointer(getPointer(UE4 + 0x50B7600) + 0xA8)+0x30;//
+ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(220, 24, 17, 255));
+ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(220, 24, 17, 255));
+ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(220, 24, 17, 255));
+ImGui::PopStyleColor(3);
+writefloat(a1,4000);
+}
+ImGui::SameLine();
+if (ImGui::Button(ICON_FA_PLAY"", ImVec2(56, 49))) {
+long a1 = getPointer(getPointer(UE4 + 0x50B7600) + 0xA8)+0x30;//
+ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(220, 24, 17, 255));
+ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(220, 24, 17, 255));
+ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(220, 24, 17, 255));
+ImGui::PopStyleColor(3);
+writefloat(a1,0);
+}
+ImGui::SameLine();
+if (ImGui::Button(ICON_FA_ARROW_DOWN"", ImVec2(56, 49))) {
+long b1 = getPointer(getPointer(UE4 + 0x50B7600) + 0xA8)+0x30;//
+ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(220, 24, 17, 255));
+ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(220, 24, 17, 255));
+ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(220, 24, 17, 255));
+ImGui::PopStyleColor(3);
+writefloat(b1,-3000);
+}
+ImGui::SameLine();
+if (ImGui::Button(ICON_FA_ARROW_CIRCLE_DOWN"", ImVec2(56, 49))) {
+long b1 = getPointer(getPointer(UE4 + 0x50B7600) + 0xA8)+0x30;//
+ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(220, 24, 17, 255));
+ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(220, 24, 17, 255));
+ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(220, 24, 17, 255));
+ImGui::PopStyleColor(3);
+writefloat(b1,-300);
+}
+ImGui::SameLine();
+if (RLFLY) { 
+ImGui::Button(ICON_FA_BAN"", ImVec2(56, 49)); { RLFLY = true; }
+} else {
+ImGui::Button(ICON_FA_BAN"", ImVec2(56, 49)); { RLFLY = false; }
+}
+if (ImGui::IsItemClicked()) {
+pthread_t t;
+pthread_create(&t, 0, run_thread, (void *)(4451));
+RLFLY = !RLFLY;
+}
+ImGui::PopStyleColor(5);
+ImGui::PopStyleVar(1);
+}
+}
+/*
+*/
+ //=====================================================================//
+
+//=====================================================================//
+float fps = ImGui::GetIO().Framerate;
+char RLFLYPOWER[32];
+if (fps < 61.0f) {
+snprintf(RLFLYPOWER, sizeof(RLFLYPOWER), OBFUSCATE("FPS %.0f"), fps);
+draw->AddText(NULL,35.0f,{((float) density / 8.0f), 25}, ImColor(255, 0, 0,255),RLFLYPOWER); 
+}else if (fps < 148.0f) {
+snprintf(RLFLYPOWER, sizeof(RLFLYPOWER), OBFUSCATE("FPS %.0f"), fps);
+draw->AddText(NULL,35.0f,{((float) density / 8.0f), 25}, ImColor(0, 255, 0,255),RLFLYPOWER);
+}
+//======================================================//
+//======================================================//
+float t = ImGui::GetTime();
+ImColor rgb(
+    (int)((sin(t*2)+1)*127.5),
+    (int)((sin(t*2+2)+1)*127.5),
+    (int)((sin(t*2+4)+1)*127.5)
+);
+
+std::string telegram = "MAA CHOOD NE WALA MOD";
+auto size = ImGui::CalcTextSize2(telegram.c_str(), 0, 35.0f);
+
+DrawTextWithBorder(
+    draw,
+    telegram,
+    { (glWidth - size.x) * 0.5f, 630.0f },
+    rgb,
+    outlinecolor,
+    35.0f
+);
+
+//======================================================//*/
+ 
+  
+//==============================================================================================================//
+auto DrawOutlinedText = [&](ImVec2 pos, ImColor col, const char* text, float size = 22.0f) {
+    draw->AddText(NULL, size, ImVec2(pos.x + 1, pos.y + 1), ImColor(0, 0, 0, 255), text);
+    draw->AddText(NULL, size, ImVec2(pos.x - 1, pos.y - 1), ImColor(0, 0, 0, 255), text);
+    draw->AddText(NULL, size, pos, col, text);};
+//======================================================//
+float x = (float)density / 14.0f;
+DrawOutlinedText({x, 600}, ImColor(255, 0, 100, 255), ICON_FA_COG " TG OWNER:- @GOKU_CHEATSS");
+DrawOutlinedText({x, 625}, ImColor(0, 255, 80, 255), ICON_FA_COG " BUY TO KEY DM :- @GOKU_CHEATASS");
+DrawOutlinedText({x, 650}, ImColor(0, 180, 255, 255), ICON_FA_TELEGRAM "GOKU x POWER MOD 32x");
+//==============================================================================================================//
+  
+/*std::string telegram = "!! GOKU x GHOST !!";
+auto telegramTextSize = ImGui::CalcTextSize2(telegram.c_str(), 0, 35.0f); 
+float telegramPosX = (glWidth - telegramTextSize.x) / 2.0f;
+float telegramPosY = 630.0f; 
+DrawTextWithBorder(draw, telegram, {telegramPosX, telegramPosY}, ImColor(isRed, isBlue, isGreen), outlinecolor, 35.0f);
+draw->AddText({((float) density / 10.0f), 600}, ImColor(255, 255, 0, 255), (ICON_FA_TELEGRAM "JOIN TG :- @GOKU_CHEATSS"));
+draw->AddText({((float) density / 10.0f), 630}, ImColor(22, 22, 201,255), (ICON_FA_ROCKET"TG OWNER :- @Vipinrana002"));*/
+
+//======================================================//
+//auto isFrames = ImGui::GetFrameCount();
+if(isFrames % 1 == 0) {
+if(isGreen == 0.01f && isBlue == 0.0f){
+isRed += 0.01f;
+ }
+if(isRed > 0.99f && isBlue == 0.0f){
+isRed = 1.0f;
+isGreen += 0.01f;
+}
+if(isGreen > 0.99f && isBlue == 0.0f){
+isGreen = 1.0f;
+isRed -= 0.01f;
+}
+if(isRed < 0.01f && isGreen == 1.0f){
+isRed = 0.0f;
+isBlue += 0.01f;
+}
+if(isBlue > 0.99f && isRed == 0.0f){
+isBlue = 1.0f;
+isGreen -= 0.01f;
+}
+if(isGreen < 0.01f && isBlue == 1.0f){
+isGreen = 0.0f;
+isRed += 0.01f;
+}
+if(isRed > 0.99f && isGreen == 0.0f){
+isRed = 1.0f;
+isBlue -= 0.01f;
+}
+if(isBlue < 0.01f && isGreen == 0.0f){
+isBlue = 0.0f;
+isRed -= 0.01f;
+if(isRed < 0.01f)
+isGreen = 0.01f;
+}
+}
+/*static float startTime = 0.0f;
+if (g_LocalController == 0) {
+    startTime = 0.0f;
+} else {
+    if (startTime == 0.0f) {
+        startTime = ImGui::GetTime();//DEVILFLASH_OP
+    }
+    if (ImGui::GetTime() - startTime < 10.0f) {
+        ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+        const char* text = "!! GOKU x GHOST POWER !!";
+        float fontSize = 150.0f;
+        ImVec2 textSize = ImGui::CalcTextSize(text);//DEVILFLASH_OP
+        textSize.x *= (fontSize / 30.0f);//DEVILFLASH_OP
+        textSize.y *= (fontSize / 30.0f);//DEVILFLASH_OP
+        ImVec2 textPos = {
+            (screenSize.x - textSize.x) / 2,
+            (screenSize.y - textSize.y) / 2
+        };
+        static float hue = 0.0f;
+        hue += 0.01f;
+        if (hue > 1.0f) hue = 0.0f;
+        
+        ImVec4 rgb = ImColor::HSV(hue, 1.0f, 1.0f);
+        ImU32 color = IM_COL32((int)(rgb.x * 255), (int)(rgb.y * 255), (int)(rgb.z * 255), 250);//@DEVILFLASH_OP
+        draw->AddText(NULL, fontSize, textPos, color, text);//DEVILFLASH_OP
+    }
+}*/
+
+if(ACTIVE_ESP){
+AutoFire2=true;
+//draw->AddCircle(ImVec2(glWidth / 2, glHeight / 2), FOVSMOKERANDI, ImColor(255, 0, 0, 255), 0, 0.9f);
+Config.PlayerESP.Line = true;
+Config.PlayerESP.Distance = true;
+Config.PlayerESP.Health = true;
+Config.PlayerESP.Skeleton = true;
+Config.PlayerESP.Name = true;
+Config.PlayerESP.Visibility = true;
+Config.SilentAim.Enable = true;
+Config.PlayerESP.TeamID = true;
+Config.AimBot.VisCheck = true;
+}else{
+AutoFire2 = false;
+Config.PlayerESP.Visibility = false;
+Config.PlayerESP.Line = false;
+Config.PlayerESP.Distance = false;
+Config.PlayerESP.Health = false;
+Config.PlayerESP.TeamID = false;
+Config.PlayerESP.Skeleton = false;
+Config.PlayerESP.Name = false;
+Config.SilentAim.Enable = false;
+Config.AimBot.VisCheck = false;
+}
+
+
+
+
+
+
+//=====================================================================//
+//=====================================================================//
+int totalEnemies = 0, totalBots = 0;
+uintptr_t localPlayer = 0, localController = 0/*, localWeapon = 0*/;
+
+
+SDK::ASTExtraPlayerCharacter *ZevaPlayer = 0;
+SDK::ASTExtraPlayerController *ZevaController = 0;
+SDK::ASTExtraShootWeapon *localWeapon = 0;
+
+auto ALFAS = Zeva_Actors();
+    
+    for (int i = 0; i < ALFAS.size(); i++){
+        auto ALFAS_xD = ALFAS[i];
+        if (isObjectInvalids(ALFAS_xD))
+            continue;
+        if (ALFAS_xD->IsA(SDK::ASTExtraPlayerController::StaticClass())){
+            ZevaController = (SDK::ASTExtraPlayerController *)ALFAS_xD;
+            break;
+        }
+    }
+    
+	
+
+	
+    if (ZevaController){
+    for (int i = 0; i < ALFAS.size(); i++){
+        auto ALFAS_xD = ALFAS[i];
+        if (isObjectInvalids(ALFAS_xD))
+            continue;
+        if (ALFAS_xD->IsA(SDK::ASTExtraPlayerCharacter::StaticClass())){
+            if (((SDK::ASTExtraPlayerCharacter *)ALFAS_xD)->PlayerKey == ZevaController->PlayerKey){
+                ZevaPlayer = (SDK::ASTExtraPlayerCharacter *)ALFAS_xD;
+                break;
+            }
+        }
+    }
+}
+
+ 
+for (int i = 0; i < ALFAS.size(); i++) {
+          auto ALFAS_xD = ALFAS[i];
+       if (isObjectInvalids(ALFAS_xD))
+          continue;
+
+		  }
+
+uintptr_t GameWorld = getGWorld();
+if (GameWorld) {
+uintptr_t NetDriver = * (uintptr_t *)(GameWorld + World_NetDriver);
+if (NetDriver) {
+uintptr_t ServerConnection = * (uintptr_t *)(NetDriver + NetDriver_ServerConnection);
+if (ServerConnection) {
+localController = * (uintptr_t *)(ServerConnection + Player_PlayerController);
+}}}
+    
+if (localController) {
+auto Actors = getActors();
+for (auto Actor : Actors) {
+if (!isObjectPlayer(Actor))
+continue;
+if ( * (uint32_t *)(Actor + UAECharacter_PlayerKey) == * (uint32_t *)(localController + UAEPlayerController_PlayerKey)) {
+localPlayer = Actor;
+break;
+}}
+if (localPlayer) {
+
+
+
+if(ACTIVE_ESP){
+auto DON_HUDPtr=*(uintptr_t *)((uintptr_t)ZevaController+0x32C);
+if(DON_HUDPtr){
+auto DON_HUD=(ASurviveHUD *)DON_HUDPtr;
+if(DON_HUD){
+static float DON_Counter=0.0f;
+const float DON_RainbowSpeed=10.0f;
+FLinearColor DON_RainbowColors[]={
+FLinearColor(1.0f,0.0f,0.0f,1.0f),
+FLinearColor(1.0f,0.5f,0.0f,1.0f),
+FLinearColor(1.0f,1.0f,0.0f,1.0f),
+FLinearColor(0.0f,1.0f,0.0f,1.0f),
+FLinearColor(0.0f,0.0f,1.0f,1.0f),
+FLinearColor(0.5f,0.0f,1.0f,1.0f),
+FLinearColor(1.0f,0.0f,1.0f,1.0f),
+FLinearColor(1.0f,0.0f,0.5f,1.0f),
+FLinearColor(0.5f,0.0f,0.5f,1.0f),
+FLinearColor(0.0f,0.5f,0.5f,1.0f),
+FLinearColor(0.5f,0.5f,0.5f,1.0f),
+FLinearColor(0.5f,0.0f,0.0f,1.0f),
+FLinearColor(0.0f,0.5f,0.0f,1.0f),
+FLinearColor(0.0f,0.5f,0.5f,1.0f),
+FLinearColor(0.5f,0.5f,0.0f,1.0f),
+FLinearColor(0.0f,0.0f,0.5f,1.0f),
+FLinearColor(0.5f,0.0f,0.5f,1.0f),
+FLinearColor(0.5f,1.0f,0.0f,1.0f),
+FLinearColor(0.0f,0.5f,1.0f,1.0f),
+FLinearColor(1.0f,0.5f,0.5f,1.0f),
+FLinearColor(0.5f,0.0f,0.0f,1.0f),
+FLinearColor(0.0f,0.0f,0.0f,1.0f),
+FLinearColor(1.0f,1.0f,1.0f,1.0f),
+FLinearColor(0.0f,1.0f,1.0f,1.0f),
+FLinearColor(0.5f,0.5f,1.0f,1.0f),
+FLinearColor(0.75f,0.75f,0.0f,1.0f)
+};
+int DON_ColorIndex=static_cast<int>(fmod(DON_Counter*DON_RainbowSpeed,28.0f));
+FLinearColor DON_Color1=DON_RainbowColors[DON_ColorIndex];
+FLinearColor DON_Color2=DON_RainbowColors[(DON_ColorIndex+1)%7];
+float DON_Interp=fmod(DON_Counter*DON_RainbowSpeed,20.0f);
+FLinearColor DON_FinalColor=
+FLinearColor(
+DON_Color1.R+(DON_Color2.R-DON_Color1.R)*DON_Interp,
+DON_Color1.G+(DON_Color2.G-DON_Color1.G)*DON_Interp,
+DON_Color1.B+(DON_Color2.B-DON_Color1.B)*DON_Interp,
+1.0f
+);
+DON_HUD->HitPerform.HitBodyDrawColor=DON_FinalColor;
+DON_HUD->HitPerform.HitHeadDrawColor=DON_FinalColor;
+DON_HUD->HitPerform.HitLimbsDrawColor=DON_FinalColor;
+DON_Counter=(DON_Counter>=360.0f)?0.0f:(DON_Counter+0.02f);
+}
+}
+}
+//==================
+
+
+if (Config.SilentAim.Enable)
+        {
+            auto WeaponManagerComponent = AlFAS_LocalPlayer->WeaponManagerComponent;
+            if (WeaponManagerComponent)
+            {
+                auto propSlot = WeaponManagerComponent->GetCurrentUsingPropSlot();
+                if ((int)propSlot.GetValue() >= 1 && (int)propSlot.GetValue() <= 3)
+                {
+                    auto CurrentWeaponReplicated =
+                    (ASTExtraShootWeapon *)
+                    WeaponManagerComponent->CurrentWeaponReplicated;
+                    if (CurrentWeaponReplicated)
+                    {
+                        auto ShootWeaponComponent =
+                        CurrentWeaponReplicated->ShootWeaponComponent;
+                        if (ShootWeaponComponent)
+                        {
+                            int shoot_event_idx = 140;
+                            auto VTable = (void **)ShootWeaponComponent->VTable;
+                            auto f_mprotect = [](uintptr_t addr, size_t len,
+                            int32_t prot) -> int32_t
+                            {
+                                static_assert(PAGE_SIZE == 4096);
+                                constexpr size_t page_size = static_cast<size_t>(PAGE_SIZE);
+                                void *start = reinterpret_cast<void *>(addr & -page_size);
+                                uintptr_t end = (addr + len + page_size - 20) & -page_size;
+                                return mprotect(start, end - reinterpret_cast<uintptr_t>(start), prot);
+                            };
+                            if (VTable && (VTable[shoot_event_idx] != shoot_event))
+                            {
+                                orig_shoot_event =
+                                decltype(orig_shoot_event)(VTable[shoot_event_idx]);
+                                f_mprotect((uintptr_t)(&VTable[shoot_event_idx]),
+                                sizeof(uintptr_t), PROT_READ | PROT_WRITE);
+                                VTable[shoot_event_idx] = (void *)shoot_event;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+Vector3 myPos = GetBonePos(localPlayer, 0);
+            int myTeamID = *(int *)(localPlayer + UAECharacter_TeamID);
+            ImU32 U1SCOLOR, U1HPCOLOR;
+            ImU32 SCOLOR, SCOLOR2, SCOLOR3, SCOLOR4, NAME,HPColor;
+            for (auto Actor : Actors) {
+                if (isObjectPlayer(Actor)) {
+                    if (Actor == localPlayer)
+                        continue;
+                    int TeamID = * (int *)(Actor + UAECharacter_TeamID);
+                    if (TeamID == myTeamID)
+                        continue;
+                    bool bDead = * (bool *)(Actor + STExtraCharacter_bDead);
+                    if (bDead)
+                        continue;
+                    bool isBot = * (bool *)(Actor + UAECharacter_bIsAI);
+                    float Distance = GetDistanceTo(Actor) / 100.f;
+                    if (Distance > 400.f)
+                        continue;
+                    if (Config.PlayerESP.NoBot)
+                        if (isBot)
+                            continue;
+                    
+//=====================================================================//
+
+                    SCOLOR = IM_COL32(255, 255, 255, 255);
+                    SCOLOR3 = IM_COL32(255, 255, 255, 255);
+                    SCOLOR2 = IM_COL32(255, 140, 26, 255);
+                    SCOLOR4 = IM_COL32(255, 140, 26, 255); 
+              //      HPCOLOR = IM_COL32(0, 255, 0, 200);
+              
+                    if (IsLineOfSightTo(Actor)) {
+                    SCOLOR = IM_COL32(26, 255, 255, 255);
+                    SCOLOR3 = IM_COL32(26, 255, 255, 255);
+                    SCOLOR2 = IM_COL32(255, 0, 0, 255);
+                    SCOLOR4 = IM_COL32(255, 0, 0, 255);
+                    
+                    }
+                    
+//=====================================================================//
+if (isBot) {
+   totalBots++;
+   U1SCOLOR = IM_COL32(000, 255, 000, 255);  // BOT NOT OPEN
+   U1HPCOLOR = IM_COL32(000, 255, 000, 170);  // BOT NOT OPEN
+   NAME = IM_COL32(255, 255, 255, 255);
+   
+if (IsLineOfSightTo(Actor)) {
+   U1SCOLOR = IM_COL32(255, 000, 000, 255);  // BOT OPEN
+   U1HPCOLOR = IM_COL32(255, 000, 000, 170);  // BOT OPEN
+   NAME = IM_COL32(255, 255, 255, 255);
+       }
+    } else {
+   totalEnemies++;
+   U1SCOLOR = IM_COL32(000, 255, 000, 255);  // PLAYER NOT OPEN 
+   U1HPCOLOR = IM_COL32(000, 255, 000, 170);  // PLAYER NOT OPEN  
+   NAME = IM_COL32(255, 255, 255, 255);
+   
+if (IsLineOfSightTo(Actor)) {
+   U1SCOLOR = IM_COL32(255, 000, 000, 255);  // PLAYER OPEN 
+   U1HPCOLOR = IM_COL32(255, 000, 000, 170);  // PLAYER OPEN 
+   NAME = IM_COL32(255, 255, 255, 255);
+          }
+		}
+                    
+//=====================================================================//
+
+Vector3 RootPos = GetBonePos(Actor, 0);
+Vector3 RootPosSC = WorldToScreen(RootPos);
+Vector3 HeadPosSC = WorldToScreen(GetBonePos(Actor, 6));
+                    
+//=====================================================================//
+
+if (RootPosSC.Z > 0 && HeadPosSC.Z > 0) {
+                        
+if (Config.PlayerESP.ESPUIType == EESPUIType::ESPUI01) {
+
+    if (Config.PlayerESP.Line) {
+        draw->AddLine({(float)glWidth / 2, 90}, {HeadPosSC.X, HeadPosSC.Y - 45.0f}, U1SCOLOR, 1.5f);
+    } else if (Config.PlayerESP.Line) {
+        draw->AddLine({(float)glWidth / 2, 90}, {HeadPosSC.X, HeadPosSC.Y}, U1SCOLOR, 1.5f);
+    }
+    if (Config.PlayerESP.Skeleton) {
+        static std::vector < std::vector < int>> skeleton {
+            {
+                BoneID::neck_01,
+                BoneID::clavicle_r,
+                BoneID::upperarm_r,
+                BoneID::lowerarm_r,
+                BoneID::hand_r,
+                BoneID::item_r
+            },
+            {
+                BoneID::neck_01,
+                BoneID::clavicle_l,
+                BoneID::upperarm_l,
+                BoneID::lowerarm_l,
+                BoneID::hand_l,
+                BoneID::item_l
+            },
+            {
+                BoneID::Head,
+                BoneID::neck_01,
+                BoneID::spine_03,
+                BoneID::spine_02,
+                BoneID::spine_01,
+                BoneID::pelvis
+            },
+            {
+                BoneID::pelvis,
+                BoneID::thigh_r,
+                BoneID::calf_r,
+                BoneID::foot_r
+            },
+            {
+                BoneID::pelvis,
+                BoneID::thigh_l,
+                BoneID::calf_l,
+                BoneID::foot_l
+            }
+        };
+
+        for (const auto & boneStructure: skeleton) {
+            int lastBone = 0;
+            for (int currentBone: boneStructure) {
+                if (lastBone != 0) {
+                    Vector3 boneFrom = WorldToScreen(GetBonePos(Actor, currentBone));
+                    Vector3 boneTo = WorldToScreen(GetBonePos(Actor, lastBone));
+                    if (boneFrom.Z > 0 && boneTo.Z > 0) {
+                        draw->AddLine({boneFrom.X, boneFrom.Y}, {boneTo.X, boneTo.Y}, U1SCOLOR, 1.8f);
+                    }
+                }
+                lastBone = currentBone;
+            }
+        }
+    }
+
+                          
+    ImVec2 rectCenter;
+
+    			if (Config.PlayerESP.Health){
+				        auto PlayerHealth = *(float *)(uintptr_t(Actor) + STExtraCharacter_Health);
+        auto PlayerHealthMax = *(float *)(uintptr_t(Actor) + STExtraCharacter_HealthMax);
+        int CurHP = std::clamp(static_cast < int > (PlayerHealth), 0, static_cast < int > (PlayerHealthMax));
+        int MaxHP = static_cast < int > (PlayerHealthMax);
+        long HPColor;
+
+                                HPColor = U1HPCOLOR;
+										  
+                                                       
+                           //             int CurHP = (int) std::max(0, std::min((int) Player->Health,100));
+
+float boxWidth = density / 1.6f;
+                                                boxWidth -= std::min(
+                                                        ((boxWidth / 2) / 0.001f) * Distance,
+                                                        boxWidth / 2);
+                                                float boxHeight = boxWidth * 0.15f;
+
+
+                                                ImVec2 vStart = {HeadPosSC.X - (boxWidth / 2), HeadPosSC.Y - (boxHeight * 2.001f)};
+
+                                                ImVec2 vEndFilled = {vStart.x + (CurHP * boxWidth / MaxHP), 
+												                     vStart.y + boxHeight};
+												
+                                                ImVec2 vEndRect = {vStart.x + boxWidth, vStart.y + boxHeight};
+																   
+												draw->AddRectFilledMultiColor(vStart, vEndFilled, IM_COL32(0, 0, 0, 155), HPColor, HPColor, IM_COL32(0, 0, 0, 155));
+												
+                                                draw->AddRect(vStart, vEndRect,
+                                                              U1SCOLOR, 0.0f);
+                                            }
+                                            
+    			if (Config.PlayerESP.Name){
+									
+					float boxWidth = density / 1.6f;
+                                                boxWidth -= std::min(
+                                                        ((boxWidth / 2) / 00.0f) * Distance,
+                                                        boxWidth / 2);
+                                                float boxHeight = boxWidth * 0.15f;
+
+
+                                                std::string s;
+                                                if (isBot) {
+                                                    s += "      BOT";
+                                                } else {
+s += (*(FString *)(Actor + UAECharacter_PlayerName)).ToString();
+                                                }
+                                                draw->AddText(NULL, ((float) density / 30.0f),
+                                                              {HeadPosSC.X - (boxWidth / 3.5f),
+                                                               HeadPosSC.Y - (boxHeight * 1.83f)},
+                                                              NAME,
+                                                              s.c_str());
+    }
+    					if (Config.PlayerESP.Name) {
+					          				bool shit = false;
+                            Vector3 MyPosition, EnemyPosition;
+                            auto CurrentVehiclea = *(uintptr_t *) (Actor + STExtraCharacter_CurrentVehicle);
+                            if (CurrentVehiclea) {
+                                auto RootComponent = *(uintptr_t *)(CurrentVehiclea + Actor_RootComponent);
+                                if (RootComponent) {
+                                    MyPosition = *(Vector3 *)(RootComponent + SceneComponent_RelativeLocation);
+                                }
+                            } else {
+                                auto RootComponent = *(uintptr_t *)(Actor + Actor_RootComponent);
+                                if (RootComponent) {
+                                    MyPosition = *(Vector3 *)(RootComponent + SceneComponent_RelativeLocation);
+                                }
+                            }
+                            auto CurrentVehicle = *(uintptr_t *) (localPlayer + STExtraCharacter_CurrentVehicle);
+                            if (CurrentVehicle) {
+                                auto RootComponent = *(uintptr_t *)(CurrentVehicle + Actor_RootComponent);
+                                if (RootComponent) {
+                                    EnemyPosition = *(Vector3 *)(RootComponent + SceneComponent_RelativeLocation);
+                                }
+                            } else {
+                                auto RootComponent = *(uintptr_t *)(localPlayer + Actor_RootComponent);
+                                if (RootComponent) {
+                                    EnemyPosition = *(Vector3 *)(RootComponent + SceneComponent_RelativeLocation);
+                                }
+                            }
+                            Vector3 EntityPos = WorldToRadar(GetPOV().Rotation.Yaw, MyPosition, EnemyPosition, NULL, NULL, Vector3(glWidth, glHeight, 0), shit);
+                            Vector3 angle = Vector3();
+                            Vector3 forward = Vector3((float)(glWidth / 2) - EntityPos.X, (float)(glHeight / 2) - EntityPos.Y, 0.0f);
+                            VectorAnglesRadar(forward, angle);
+                            const auto angle_yaw_rad = DEG2RAD(angle.Y + 180.f);
+                            const auto new_point_x = (glWidth / 2) + (55/*alert dist from me*/) / 2 * 8 * cosf(angle_yaw_rad);  
+                            const auto new_point_y = (glHeight / 2) + (55/*alert dist from me*/) / 2 * 8 * sinf(angle_yaw_rad);  
+                            std::array<Vector3, 3> points { Vector3(new_point_x - ((90) / 4 + 3.5f) / 2, new_point_y - ((55) / 4 + 3.5f) / 2, 0.f), Vector3(new_point_x + ((90) / 4 + 3.5f) / 4, new_point_y, 0.f), Vector3(new_point_x - ((90) / 4 + 3.5f) / 2, new_point_y + ((55) / 4 + 3.5f) / 2, 0.f)};
+                          
+      
+        
+        std::string s;
+        s += std::to_string((int)Distance);   
+        //auto textSize = ImGui::CalcTextSize(s.c_str(), 0, ((float) density / 20.0f));
+      //  draw->AddText(NULL, ((float) density / 20.0f), {new_point_x - (textSize.x / 2), new_point_y + 7.f}, IM_COL32(255,255,255,255), s.c_str());                 
+           RotateTriangle(points, angle.Y + 180.f);  
+     draw->AddCircle(ImVec2(new_point_x, new_point_y), 13.0f, IM_COL32(255,255,255,255));    
+        draw->AddCircleFilled(ImVec2(new_point_x, new_point_y), 8.0f, U1SCOLOR);
+  }
+					                                    
+					if (Config.PlayerESP.Name) {
+                                    
+float boxWidth = density / 1.6f;
+                              boxWidth -= std::min(((boxWidth / 2) / 00.0f) * Distance,
+                              boxWidth / 2);
+                              float boxHeight = boxWidth * 0.15f;
+                              std::string s;       
+                              
+                                       s += std::to_string((int)TeamID);
+                                       
+                                       draw->AddText(NULL, ((float) density / 30.0f), {HeadPosSC.X - (boxWidth / 2.3f), HeadPosSC.Y - (boxHeight * 1.83f)},
+                                       NAME, s.c_str());
+								
+							}
+
+
+    if (Config.PlayerESP.Name) {
+        std::string s = std::to_string((int) Distance) + "M";
+        auto textSize = ImGui::CalcTextSize2(s.c_str(), 0, ((float) density / 22.0f));
+        ImVec2 textPos(RootPosSC.X - (textSize.x / 2.0f), RootPosSC.Y);
+        draw->AddText(NULL, ((float) density / 22.0f), textPos, IM_COL32(255, 252, 0, 255), s.c_str());
+    }}					
+				}} 
+else if (isObjectGame(Actor)) {  
+    if (Config.PlayerESP.Health) {  
+        int AlivePlayerNum = *(int*)(Actor + STExtraGameStateBase_AlivePlayerNum);  
+        int AliveTeamNum = *(int*)(Actor + STExtraGameStateBase_AliveTeamNum);  
+
+        static bool showWinPopup = false;  
+        static bool popupClosed = false;  
+
+        if (!popupClosed && (AlivePlayerNum == 1 || AliveTeamNum == 1))  
+            showWinPopup = true;  
+
+        if (showWinPopup) {  
+            static float popupAlpha = 0.0f;  
+            static float shakeOffset = 0.0f;  
+            static bool shakeDirection = true;  
+            static float colorOffset = 0.0f;  
+            static float textShakeOffset = 0.0f;  
+
+            // Smooth fade-in
+            if (popupAlpha < 1.0f) popupAlpha += 0.05f;  
+            shakeDirection ? shakeOffset += 0.5f : shakeOffset -= 0.5f;  
+            if (shakeOffset > 2.0f) shakeDirection = false;  
+            if (shakeOffset < -2.0f) shakeDirection = true;  
+
+            textShakeOffset = sin(ImGui::GetTime() * 10.0f) * 1.5f;  
+            colorOffset += 0.05f;  
+
+            float r = 0.5f + 0.5f * sin(colorOffset);  
+            float g = 0.5f + 0.5f * sin(colorOffset + 2.0f);  
+            float b = 0.5f + 0.5f * sin(colorOffset + 4.0f);  
+
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();  
+            center.x += shakeOffset;  
+            center.y += shakeOffset;  
+
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));  
+            ImGui::SetNextWindowBgAlpha(popupAlpha);  
+            ImGui::OpenPopup("WinPopup");  
+
+            if (ImGui::BeginPopupModal("WinPopup", nullptr,
+                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))  
+            {  
+                // === Particle Background Inside Popup ===  
+                const auto& pWindowDrawList = ImGui::GetWindowDrawList();  
+                ImDrawList* pDrawList = pWindowDrawList;  
+                static const int numParticles = 100;  
+                static ImVec2 particlePositions[numParticles];  
+                static ImVec2 particleVelocities[numParticles];  
+                static bool initialized = false;  
+
+                ImVec2 winPos = ImGui::GetWindowPos();  
+                ImVec2 winSize = ImGui::GetWindowSize();  
+
+                if (!initialized) {  
+                    for (int i = 0; i < numParticles; ++i) {  
+                        particlePositions[i] = ImVec2(  
+                            winPos.x + winSize.x * static_cast<float>(rand()) / RAND_MAX,  
+                            winPos.y + winSize.y * static_cast<float>(rand()) / RAND_MAX  
+                        );  
+                        particleVelocities[i] = ImVec2(  
+                            static_cast<float>((rand() % 100) - 50),  
+                            static_cast<float>((rand() % 100) - 50)  
+                        );  
+                    }  
+                    initialized = true;  
+                }  
+
+                float deltaTime = ImGui::GetIO().DeltaTime;  
+                for (int i = 0; i < numParticles; ++i) {  
+                    particlePositions[i].x += particleVelocities[i].x * deltaTime;  
+                    particlePositions[i].y += particleVelocities[i].y * deltaTime;  
+
+                    // Boundaries inside popup window
+                    if (particlePositions[i].x < winPos.x) particlePositions[i].x = winPos.x + winSize.x;  
+                    else if (particlePositions[i].x > winPos.x + winSize.x) particlePositions[i].x = winPos.x;  
+
+                    if (particlePositions[i].y < winPos.y) particlePositions[i].y = winPos.y + winSize.y;  
+                    else if (particlePositions[i].y > winPos.y + winSize.y) particlePositions[i].y = winPos.y;  
+
+                    // Color with light transparency
+                    ImU32 particleColour = ImGui::GetColorU32(ImVec4(r, g, b, 0.4f));  
+                    pDrawList->AddCircleFilled(particlePositions[i], 1.8f, particleColour);  
+                }
+
+// === Popup Text & Buttons ===  
+                ImGui::Dummy(ImVec2(0.0f, 10.0f));  
+                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - ImGui::CalcTextSize("WINNER WINNER CHICKEN DINNER").x / 2 + textShakeOffset);  
+                ImGui::TextColored(ImVec4(r, g, b, 1.0f), "WINNER WINNER CHICKEN DINNER");  
+
+                ImGui::Separator();  
+                ImGui::BulletText("RESTART YOUR GAME");  
+                ImGui::Separator();  
+                ImGui::BulletText("YOUR FEEDBACK IS IMPORTANT ");  
+                ImGui::Separator();  
+                ImGui::BulletText("TG OWNER :- @GOKU_CHEATSS");  
+                ImGui::Spacing();  
+
+                float buttonWidth = ImGui::GetWindowWidth() * 0.9f;  
+                float buttonHeight = 45.0f;  
+                ImGui::SetCursorPosX((ImGui::GetWindowWidth() - buttonWidth) / 2);  
+
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.5f);  
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);  
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.25f, 0.25f, 1.0f));  
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.35f, 0.35f, 1.0f));  
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15f, 0.15f, 0.15f, 1.0f));  
+
+                if (ImGui::Button("OK", ImVec2(buttonWidth, buttonHeight))) {  
+                    popupAlpha = 0.0f;  
+                    shakeOffset = 0.0f;  
+                    colorOffset = 0.0f;  
+                    textShakeOffset = 0.0f;  
+                    showWinPopup = false;  
+                    popupClosed = true;  
+                    initialized = false; // reset particle system  
+                    ImGui::CloseCurrentPopup();  
+                }  
+
+                ImGui::PopStyleColor(3);  
+                ImGui::PopStyleVar(2);  
+                ImGui::EndPopup();  
+            }  
+        }  
+    }  
+}
+		  else if (isObjectPickUp(Actor)) {
+int ZY13 = *(int *) (Actor + PickUpWrapperActor_DefineID + 0x4);
+if (Items[ZY13]) {
+uintptr_t ZY11 = *(uintptr_t *) (Actor + Actor_RootComponent);
+if (!ZY11)
+continue;
+FVector2D itemPos;
+Vector3 ZY12 = *(Vector3 *) (ZY11 + SceneComponent_RelativeLocation);
+float Distance = Vector3::Distance(myPos, ZY12) / 100.0f;
+if (Distance <= 200.0f) {
+Vector3 itemPos = WorldToScreen(ZY12);
+std::string itemName;
+uint32_t textColor = 0xFF000000;
+for (auto &category: items_data) {
+for (auto &item: category["Items"]) {
+if (item["itemId"] == ZY13) {
+itemName = item["itemName"].get<std::string>();
+textColor = std::stoul(item[("itemTextColor")].get<std::string>(), nullptr, 16);
+break;
+}
+}
+}
+std::string distanceText = (" - ") + std::to_string(static_cast<int>(Distance)) + ("M");
+if (itemPos.Z > 0) {
+std::string displayText = itemName + distanceText;
+DrawTextWithBorder(draw, displayText, {itemPos.X, itemPos.Y}, textColor, outlinecolor, 20.0f);
+}
+}
+}
+}
+}
+}
+}
+//@THOR_LITE_OWNER
+//==================== ESP COUNT=======================//
+ g_LocalController=localController;
+g_LocalPlayer=localPlayer;
+ImVec2 headPosSC;
+g_LocalController = localController;
+g_LocalPlayer = localPlayer;
+
+
+AlFAS_LocalController = ZevaController;
+AlFAS_LocalPlayer = ZevaPlayer;
+
+int TotalCount=totalEnemies;
+//==================
+void DrawEnemyCounterPanel(float glWidth,int totalEnemies,int totalBots);{
+ImDrawList* dl=ImGui::GetForegroundDrawList();
+float time=ImGui::GetTime();
+ImFont* font=ImGui::GetFont();
+float baseFont=ImGui::GetFontSize();
+auto SilverShade=[&](float offset)->int{return(int)(180+50*(0.5f+0.5f*sinf(time*0.8f+offset)));};
+ImU32 colorBlack=IM_COL32(15,15,15,220);
+ImU32 colorSilverTL=IM_COL32(SilverShade(0.0f),SilverShade(1.0f),SilverShade(2.0f),220);
+ImU32 colorSilverBR=IM_COL32(SilverShade(3.0f),SilverShade(4.0f),SilverShade(5.0f),180);
+const float panelW=140.0f;
+const float panelH=34.0f;
+const float panelX=(glWidth/2.0f)-(panelW/2.0f);
+const float panelY=36.0f;
+const float panelRounding=8.0f;
+dl->AddRectFilledMultiColor(ImVec2(panelX,panelY),ImVec2(panelX+panelW,panelY+panelH),colorBlack,colorSilverTL,colorBlack,colorSilverBR);
+dl->AddRect(ImVec2(panelX-1.0f,panelY-1.0f),ImVec2(panelX+panelW+1.0f,panelY+panelH+1.0f),IM_COL32(255,255,255,200),panelRounding);
+dl->AddRect(ImVec2(panelX-2.0f,panelY-2.0f),ImVec2(panelX+panelW+2.0f,panelY+panelH+2.0f),IM_COL32(255,255,255,90),panelRounding);
+const float pad=5.0f;
+const float innerX1=panelX+pad;
+const float innerY1=panelY+pad;
+const float innerX2=panelX+panelW-pad;
+const float innerY2=panelY+panelH-pad;
+dl->AddRectFilled(ImVec2(innerX1,innerY1),ImVec2(innerX2,innerY2),IM_COL32(0,0,0,160),panelRounding-2.0f);
+if(totalEnemies+totalBots==0){
+std::string safeText="SAFE";
+float fontScale=1.6f;
+float fontSize=baseFont*fontScale;
+ImVec2 measured=ImGui::CalcTextSize(safeText.c_str(),nullptr,false);
+ImVec2 textSize=ImVec2(measured.x*(fontSize/baseFont),measured.y*(fontSize/baseFont));
+float tx=panelX+(panelW*0.5f)-(textSize.x*0.5f);
+float ty=panelY+(panelH*0.5f)-(textSize.y*0.5f);
+int r=(int)(127+128*sinf(time*2.0f+0.0f));
+int g=(int)(127+128*sinf(time*2.0f+2.0f));
+int b=(int)(127+128*sinf(time*2.0f+4.0f));
+ImU32 rgbCol=IM_COL32(r,g,b,255);
+float outlineOffset=1.2f;
+dl->AddText(font,fontSize,ImVec2(tx-outlineOffset,ty),IM_COL32(0,0,0,255),safeText.c_str());
+dl->AddText(font,fontSize,ImVec2(tx+outlineOffset,ty),IM_COL32(0,0,0,255),safeText.c_str());
+dl->AddText(font,fontSize,ImVec2(tx,ty-outlineOffset),IM_COL32(0,0,0,255),safeText.c_str());
+dl->AddText(font,fontSize,ImVec2(tx,ty+outlineOffset),IM_COL32(0,0,0,255),safeText.c_str());
+dl->AddText(font,fontSize,ImVec2(tx,ty),rgbCol,safeText.c_str());
+return;
+}
+const float squareSize=panelH-(2.0f*pad);
+const float spacing=6.0f;
+const float totalSquaresW=(squareSize*2.0f)+spacing;
+const float startX=(glWidth/2.0f)-(totalSquaresW/2.0f);
+const float sqY=innerY1;
+ImU32 colorReal=IM_COL32(220,30,30,200);
+ImU32 colorBot=IM_COL32(30,200,30,200);
+ImU32 colorSquareBorder=IM_COL32(255,255,255,70);
+ImVec2 realTL(startX,sqY);
+ImVec2 realBR(startX+squareSize,sqY+squareSize);
+dl->AddRectFilled(realTL,realBR,colorReal,6.0f);
+dl->AddRect(realTL,realBR,colorSquareBorder,6.0f);
+ImVec2 botTL(startX+squareSize+spacing,sqY);
+ImVec2 botBR(startX+squareSize+spacing+squareSize,sqY+squareSize);
+dl->AddRectFilled(botTL,botBR,colorBot,6.0f);
+dl->AddRect(botTL,botBR,colorSquareBorder,6.0f);
+std::string strReal=std::to_string(totalEnemies);
+std::string strBot=std::to_string(totalBots);
+auto DrawScaledTextCentered=[&](const std::string&s,ImVec2 tl,ImVec2 br,float scaleMultiplier){
+float fSize=baseFont*scaleMultiplier;
+ImVec2 measured=ImGui::CalcTextSize(s.c_str(),nullptr,false);
+ImVec2 textSize=ImVec2(measured.x*(fSize/baseFont),measured.y*(fSize/baseFont));
+ImVec2 center((tl.x+br.x)*0.5f,(tl.y+br.y)*0.5f);
+float tx=center.x-(textSize.x*0.5f);
+float ty=center.y-(textSize.y*0.5f);
+dl->AddText(font,fSize,ImVec2(tx,ty-1.0f),IM_COL32(255,255,255,255),s.c_str());
+};
+DrawScaledTextCentered(strReal,realTL,realBR,1.2f);
+DrawScaledTextCentered(strBot,botTL,botBR,1.2f);
+std::string labelReal="真人";
+std::string labelBot="人机";
+float labelSize=baseFont*0.75f;
+ImVec2 labelRealMeasured=ImGui::CalcTextSize(labelReal.c_str(),nullptr,false);
+ImVec2 labelBotMeasured=ImGui::CalcTextSize(labelBot.c_str(),nullptr,false);
+float labelY=panelY+panelH+2.0f;
+dl->AddText(font,labelSize,ImVec2(realTL.x+(squareSize*0.5f)-(labelRealMeasured.x*(labelSize/baseFont)*0.5f),labelY),IM_COL32(200,200,200,200),labelReal.c_str());
+dl->AddText(font,labelSize,ImVec2(botTL.x+(squareSize*0.5f)-(labelBotMeasured.x*(labelSize/baseFont)*0.5f),labelY),IM_COL32(200,200,200,200),labelBot.c_str());
+}
+}
+
+//======================================================//*/
+/*
+int GuRu_xD(const char* url) {
+JavaVM* java_vm = g_App->activity->vm;
+JNIEnv* java_env = NULL;
+jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+if (jni_return == JNI_EDETACHED) {
+if (java_vm->AttachCurrentThread(&java_env, NULL) != JNI_OK) {
+return -1;
+}
+} else if (jni_return == JNI_EVERSION) {
+return -1;
+}
+jclass sound = java_env->FindClass("android/media/MediaPlayer");
+if (sound == NULL) {
+return -3;
+}
+jmethodID create_method_id = java_env->GetMethodID(sound, "<init>", "()V");
+if (create_method_id == NULL) {
+return -4;
+}
+jobject media_player_obj = java_env->NewObject(sound, create_method_id);
+if (media_player_obj == NULL) {
+return -5;
+}
+jmethodID set_data_source_method_id = java_env->GetMethodID(sound, "setDataSource", "(Ljava/lang/String;)V");
+if (set_data_source_method_id == NULL) {
+return -6;
+}
+jstring url_str = java_env->NewStringUTF(url);
+java_env->CallVoidMethod(media_player_obj, set_data_source_method_id, url_str);
+jmethodID prepare_method_id = java_env->GetMethodID(sound, "prepare", "()V");
+if (prepare_method_id == NULL) {
+return -7;
+}
+java_env->CallVoidMethod(media_player_obj, prepare_method_id);
+jmethodID start_method_id = java_env->GetMethodID(sound, "start", "()V");
+if (start_method_id == NULL) {
+return -8;
+}
+java_env->CallVoidMethod(media_player_obj, start_method_id);
+java_env->DeleteLocalRef(sound);
+java_env->DeleteLocalRef(media_player_obj);
+java_env->DeleteLocalRef(url_str);
+if (java_vm->DetachCurrentThread() != JNI_OK) {
+return -1;
+}
+return 0;
+}
+*/
+int Chatanmusic(const char* url) {
+    JavaVM* java_vm = g_App->activity->vm;
+    JNIEnv* java_env = NULL;
+    jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+    if (jni_return == JNI_EDETACHED) {
+        if (java_vm->AttachCurrentThread(&java_env, NULL) != JNI_OK) {
+            return -1;
+        }
+    } else if (jni_return == JNI_EVERSION) {
+        return -1;
+    }
+ jclass PIRO = java_env->FindClass("android/media/MediaPlayer");
+    if (PIRO == NULL) {
+        return -3;
+    }
+
+    jmethodID create_method_id = java_env->GetMethodID(PIRO, "<init>", "()V");
+    if (create_method_id == NULL) {
+        return -4;
+    }
+
+    jobject media_player_obj = java_env->NewObject(PIRO, create_method_id);
+    if (media_player_obj == NULL) {
+        return -5;
+    }
+
+    jmethodID set_data_source_method_id = java_env->GetMethodID(PIRO, "setDataSource", "(Ljava/lang/String;)V");
+    if (set_data_source_method_id == NULL) {
+        return -6;
+  }
+
+    jstring url_str = java_env->NewStringUTF(url);
+    java_env->CallVoidMethod(media_player_obj, set_data_source_method_id, url_str);
+
+    jmethodID prepare_method_id = java_env->GetMethodID(PIRO, "prepare", "()V");
+    if (prepare_method_id == NULL) {
+        return -7;
+    }
+    java_env->CallVoidMethod(media_player_obj, prepare_method_id);
+
+    jmethodID start_method_id = java_env->GetMethodID(PIRO, "start", "()V");
+    if (start_method_id == NULL) {
+        return -8;
+    }
+   
+    java_env->CallVoidMethod(media_player_obj, start_method_id);
+
+    java_env->DeleteLocalRef(PIRO);
+    java_env->DeleteLocalRef(media_player_obj);
+    java_env->DeleteLocalRef(url_str);
+
+    if (java_vm->DetachCurrentThread() != JNI_OK) {
+        return -1;
+    }
+
+    return 0;
+}
+std::string getClipboardText() {
+	if (!g_App)
+		return "";
+	auto activity = g_App->activity;
+	if (!activity)
+		return "";
+	auto vm = activity->vm;
+	if (!vm)
+		return "";
+	auto object = activity->clazz;
+	if (!object)
+		return "";
+	std::string result;
+	JNIEnv * env;
+	vm->AttachCurrentThread( & env, 0);
+	{
+		auto ContextClass = env->FindClass("android/content/Context");
+		auto getSystemServiceMethod = env->GetMethodID(ContextClass, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
+		auto str = env->NewStringUTF("clipboard");
+		auto clipboardManager = env->CallObjectMethod(object, getSystemServiceMethod, str);
+		env->DeleteLocalRef(str);
+		auto ClipboardManagerClass = env->FindClass("android/content/ClipboardManager");
+		auto getText = env->GetMethodID(ClipboardManagerClass, "getText", "()Ljava/lang/CharSequence;");
+		auto CharSequenceClass = env->FindClass("java/lang/CharSequence");
+		auto toStringMethod = env->GetMethodID(CharSequenceClass, "toString", "()Ljava/lang/String;");
+		auto text = env->CallObjectMethod(clipboardManager, getText);
+		if (text) {
+			str = (jstring)env->CallObjectMethod(text, toStringMethod);
+			result = env->GetStringUTFChars(str, 0);
+			env->DeleteLocalRef(str);
+			env->DeleteLocalRef(text);
+		}
+		env->DeleteLocalRef(CharSequenceClass);
+		env->DeleteLocalRef(ClipboardManagerClass);
+		env->DeleteLocalRef(clipboardManager);
+		env->DeleteLocalRef(ContextClass);
+	}
+	vm->DetachCurrentThread();
+	return result;
+}
+const char * GetAndroidID(JNIEnv * env, jobject context) {
+	jclass contextClass = env->FindClass("android/content/Context");
+	jmethodID getContentResolverMethod = env->GetMethodID(contextClass, "getContentResolver", "()Landroid/content/ContentResolver;");
+	jclass settingSecureClass = env->FindClass("android/provider/Settings$Secure");
+	jmethodID getStringMethod = env->GetStaticMethodID(settingSecureClass, "getString", "(Landroid/content/ContentResolver;Ljava/lang/String;)Ljava/lang/String;");
+	auto obj = env->CallObjectMethod(context, getContentResolverMethod);
+	auto str = (jstring)env->CallStaticObjectMethod(settingSecureClass, getStringMethod, obj, env->NewStringUTF("android_id"));
+	return env->GetStringUTFChars(str, 0);
+}
+const char * GetDeviceModel(JNIEnv * env) {
+	jclass buildClass = env->FindClass("android/os/Build");
+	jfieldID modelId = env->GetStaticFieldID(buildClass, "MODEL", "Ljava/lang/String;");
+	auto str = (jstring)env->GetStaticObjectField(buildClass, modelId);
+	return env->GetStringUTFChars(str, 0);
+}
+const char * GetDeviceBrand(JNIEnv * env) {
+	jclass buildClass = env->FindClass("android/os/Build");
+	jfieldID modelId = env->GetStaticFieldID(buildClass, "BRAND", "Ljava/lang/String;");
+	auto str = (jstring)env->GetStaticObjectField(buildClass, modelId);
+	return env->GetStringUTFChars(str, 0);
+}
+const char * GetPackageName(JNIEnv * env, jobject context) {
+	jclass contextClass = env->FindClass("android/content/Context");
+	jmethodID getPackageNameId = env->GetMethodID(contextClass, "getPackageName", "()Ljava/lang/String;");
+	auto str = (jstring)env->CallObjectMethod(context, getPackageNameId);
+	return env->GetStringUTFChars(str, 0);
+}
+const char * GetDeviceUniqueIdentifier(JNIEnv * env, const char * uuid) {
+	jclass uuidClass = env->FindClass("java/util/UUID");
+	auto len = strlen(uuid);
+	jbyteArray myJByteArray = env->NewByteArray(len);
+	env->SetByteArrayRegion(myJByteArray, 0, len, (jbyte *)uuid);
+	jmethodID nameUUIDFromBytesMethod = env->GetStaticMethodID(uuidClass, "nameUUIDFromBytes", "([B)Ljava/util/UUID;");
+	jmethodID toStringMethod = env->GetMethodID(uuidClass, "toString", "()Ljava/lang/String;");
+	auto obj = env->CallStaticObjectMethod(uuidClass, nameUUIDFromBytesMethod, myJByteArray);
+	auto str = (jstring)env->CallObjectMethod(obj, toStringMethod);
+	return env->GetStringUTFChars(str, 0);
+}
+struct MemoryStruct {
+	char * memory;
+	size_t size;
+};
+static size_t WriteMemoryCallback(void * contents, size_t size, size_t nmemb, void * userp) {
+	size_t realsize = size * nmemb;
+	struct MemoryStruct * mem = (struct MemoryStruct *)userp;
+	mem->memory = (char *)realloc(mem->memory, mem->size + realsize + 1);
+	if (mem->memory == NULL) {
+		return 0;
+	}
+	memcpy( & (mem->memory[mem->size]), contents, realsize);
+	mem->size += realsize;
+	mem->memory[mem->size] = 0;
+	return realsize;
+}
+
+
+std::string Login(const char *user_key) {
+        if (!g_App)
+            return "Internal Error";
+        auto activity = g_App->activity;
+        if (!activity)
+            return "Internal Error";
+        auto vm = activity->vm;
+        if (!vm)
+            return "Internal Error";
+        auto object = activity->clazz;
+        if (!object)
+            return "Internal Error";
+        JNIEnv *env;
+        vm->AttachCurrentThread(&env, 0);
+        std::string hwid = user_key;
+        hwid += GetAndroidID(env, object);
+        hwid += GetDeviceModel(env);
+        hwid += GetDeviceBrand(env);
+        std::string UUID = GetDeviceUniqueIdentifier(env, hwid.c_str());
+        vm->DetachCurrentThread();
+        std::string errMsg;
+        struct MemoryStruct chunk{};
+        chunk.memory = (char *) malloc(1);
+        chunk.size = 0;
+        CURL *curl;
+        CURLcode res;
+        curl = curl_easy_init();
+   if (curl) {
+        std::string m2hpampa = "https://gokuxvip.vippanel.store/connect";
+curl_easy_setopt(curl, CURLOPT_PINNEDPUBLICKEY, "sha256//Ur2ipuqn0q5T8oXWxoZtmUx39HacSP2AGXB9lojhmrA=");
+        std::string sRedLink = m2hpampa;
+        curl_easy_setopt(curl, CURLOPT_URL, sRedLink.c_str());
+
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        
+        
+
+        curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, /*https*/ StrEnc("!mLBO", "\x49\x19\x38\x32\x3C", 5).c_str());
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, /*Content-Type: application/x-www-form-urlencoded*/ StrEnc("@;Ls\\(KP4Qrop`b#d3094/r1cf<c<=H)AiiBG6i|Ta66s2[", "\x03\x54\x22\x07\x39\x46\x3F\x7D\x60\x28\x02\x0A\x4A\x40\x03\x53\x14\x5F\x59\x5A\x55\x5B\x1B\x5E\x0D\x49\x44\x4E\x4B\x4A\x3F\x04\x27\x06\x1B\x2F\x6A\x43\x1B\x10\x31\x0F\x55\x59\x17\x57\x3F", 47).c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        char data[4096];
+        sprintf(data, /*game=PUBG&user_key=%s&serial=%s*/ StrEnc("qu2yXK,YkJyGD@ut0.u~Nb'5(:.:chK", "\x16\x14\x5F\x1C\x65\x1B\x79\x1B\x2C\x6C\x0C\x34\x21\x32\x2A\x1F\x55\x57\x48\x5B\x3D\x44\x54\x50\x5A\x53\x4F\x56\x5E\x4D\x38", 31).c_str(), user_key, UUID.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+        res = curl_easy_perform(curl);
+        if (res == CURLE_OK) {
+            try {
+                json result = json::parse(chunk.memory);
+                if (result[/*status*/ StrEnc("(>_LBm", "\x5B\x4A\x3E\x38\x37\x1E", 6).c_str()] == true) {
+
+std::string token = result[/*data*/ StrEnc("fAVA", "\x02\x20\x22\x20", 4).c_str()][/*token*/ StrEnc("{>3Lr", "\x0F\x51\x58\x29\x1C", 5).c_str()].get<std::string>();
+                    time_t rng = result[/*data*/ StrEnc("fAVA", "\x02\x20\x22\x20", 4).c_str()][/*rng*/ StrEnc("+n,", "\x59\x00\x4B", 3).c_str()].get<time_t>();
+					//BHATIA_EXP = result["data"]["BHATIA_EXP"].get<std::string>();
+                 
+					if (rng + 30 > time(0)) {
+                        std::string auth = /*PUBG*/ StrEnc("Q*) ", "\x01\x7F\x6B\x67", 4).c_str();;
+                        auth += "-";
+                        auth += user_key;
+                        auth += "-";
+                        auth += UUID;
+                        auth += "-";
+                        auth += /*Vm8Lk7Uj2JmsjCPVPVjrLa7zgfx3uz9E*/ StrEnc("-2:uwZdV^%]?{{wHs2V,+(^NJU;kC*_{", "\x7B\x5F\x02\x39\x1C\x6D\x31\x3C\x6C\x6F\x30\x4C\x11\x38\x27\x1E\x23\x64\x3C\x5E\x67\x49\x69\x34\x2D\x33\x43\x58\x36\x50\x66\x3E", 32).c_str();
+                        std::string outputAuth = Tools::CalcMD5(auth);
+
+                        g_Token = token;
+                        g_Auth = outputAuth;
+
+                        bValid = g_Token == g_Auth;
+                    }
+                } else {
+                    errMsg = result[/*reason*/ StrEnc("LW(3(c", "\x3E\x32\x49\x40\x47\x0D", 6).c_str()].get<std::string>();
+                }
+            } catch (json::exception &e) {
+                errMsg = "{";
+                errMsg += e.what();
+                errMsg += "}\n{";
+                errMsg += chunk.memory;
+                errMsg += "}";
+            }
+        } else {
+            errMsg = curl_easy_strerror(res);
+        }
+    }
+    curl_easy_cleanup(curl);
+
+    return bValid ? "OK" : errMsg;
+}
+
+// ======================================================================== //
+void DrawTextCentered(const char *text) {
+ImGui::Separator();
+ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(text).x) / 2.f);
+ImGui::Text(text);
+ImGui::Separator();}
+void DrawText(std::string text) {
+ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(text.c_str()).x) / 2.f);
+ImGui::Text(text.c_str());}
+EGLBoolean (*orig_eglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
+
+EGLBoolean _eglSwapBuffers(EGLDisplay dpy, EGLSurface surface)
+{
+    eglQuerySurface(dpy, surface, EGL_WIDTH, &glWidth);
+    eglQuerySurface(dpy, surface, EGL_HEIGHT, &glHeight);
+    if (glWidth <= 0 || glHeight <= 0)
+    return orig_eglSwapBuffers(dpy, surface);
+
+    if (!g_App)
+    return orig_eglSwapBuffers(dpy, surface);
+
+    screenWidth = ANativeWindow_getWidth(g_App->window);
+    screenHeight = ANativeWindow_getHeight(g_App->window);
+    density = AConfiguration_getDensity(g_App->config);
+
+if(!initImGui){
+ImGui::CreateContext();
+ImGuiStyle *style=&ImGui::GetStyle();
+style->WindowRounding=3.0f;
+style->FrameRounding=3.0f;
+style->ScrollbarRounding=1.0f;
+style->FrameBorderSize=2.0f;
+style->WindowBorderSize=5.00;
+style->ScrollbarSize=10;
+style->WindowTitleAlign=ImVec2(0.5,0.5);
+style->FramePadding=ImVec2(6,4);
+style->Colors[ImGuiCol_Text]=ImVec4(1.0f,1.0f,1.0f,1.0f);
+style->Colors[ImGuiCol_TextDisabled]=ImVec4(0.60f,0.60f,0.60f,1.00f);
+style->Colors[ImGuiCol_WindowBg]=ImColor(24,24,24,255);
+style->Colors[ImGuiCol_ChildBg]=ImVec4(0.00f,0.00f,0.00f,0.00f);
+style->Colors[ImGuiCol_PopupBg]=ImVec4(0.05f,0.05f,0.10f,0.85f);
+style->Colors[ImGuiCol_Border]=ImColor(192,192,192,155);
+style->Colors[ImGuiCol_BorderShadow]=ImColor(220,220,220,100);
+style->Colors[ImGuiCol_FrameBg]=ImColor(40,40,40,255);
+style->Colors[ImGuiCol_FrameBgActive]=ImColor(40,40,40,255);
+style->Colors[ImGuiCol_FrameBgHovered]=ImColor(40,40,40,255);
+style->Colors[ImGuiCol_TitleBg]=ImColor(24,24,24,255);
+style->Colors[ImGuiCol_TitleBgActive]=ImColor(24,24,24,255);
+style->Colors[ImGuiCol_TitleBgCollapsed]=ImColor(24,24,24,255);
+style->Colors[ImGuiCol_MenuBarBg]=ImVec4(0.15f,0.18f,0.22f,1.00f);
+style->Colors[ImGuiCol_ScrollbarBg]=ImVec4(0.20f,0.25f,0.30f,0.60f);
+style->Colors[ImGuiCol_ScrollbarGrab]=ImVec4(0.55f,0.53f,0.55f,0.51f);
+style->Colors[ImGuiCol_ScrollbarGrabHovered]=ImVec4(0.56f,0.56f,0.56f,1.00f);
+style->Colors[ImGuiCol_ScrollbarGrabActive]=ImVec4(0.56f,0.56f,0.56f,0.91f);
+style->Colors[ImGuiCol_CheckMark]=ImVec4(1.0f,0.0f,1.0f,1.0f);
+style->Colors[ImGuiCol_SliderGrab]=ImVec4(0.70f,0.70f,0.70f,0.62f);
+style->Colors[ImGuiCol_SliderGrabActive]=ImVec4(0.30f,0.30f,0.30f,0.84f);
+style->Colors[ImGuiCol_Separator]=ImColor(70,70,70,255);
+style->Colors[ImGuiCol_SeparatorActive]=ImColor(70,70,70,255);
+style->Colors[ImGuiCol_SeparatorHovered]=ImColor(70,70,70,255);
+style->Colors[ImGuiCol_Button]=ImColor(70,70,70,255);
+style->Colors[ImGuiCol_ButtonActive]=ImColor(70,70,70,255);
+style->Colors[ImGuiCol_ButtonHovered]=ImColor(255,69,0,255);
+style->Colors[ImGuiCol_Header]=ImColor(40,40,40,255);
+style->Colors[ImGuiCol_HeaderActive]=ImColor(40,40,40,255);
+style->Colors[ImGuiCol_HeaderHovered]=ImColor(40,40,40,255);
+style->Colors[ImGuiCol_ResizeGrip]=ImVec4(1.00f,1.00f,1.00f,0.85f);
+style->Colors[ImGuiCol_ResizeGripHovered]=ImVec4(1.00f,1.00f,1.00f,0.60f);
+style->Colors[ImGuiCol_ResizeGripActive]=ImVec4(1.00f,1.00f,1.00f,0.90f);
+style->Colors[ImGuiCol_PlotLines]=ImVec4(1.00f,1.00f,1.00f,1.00f);
+style->Colors[ImGuiCol_PlotLinesHovered]=ImVec4(0.90f,0.70f,0.00f,1.00f);
+style->Colors[ImGuiCol_PlotHistogram]=ImVec4(0.90f,0.70f,0.00f,1.00f);
+style->Colors[ImGuiCol_PlotHistogramHovered]=ImVec4(1.00f,0.60f,0.00f,1.00f);
+style->Colors[ImGuiCol_TextSelectedBg]=ImVec4(0.00f,0.00f,1.00f,0.35f);
+style->ScaleAllSizes(std::max(1.0f,density/1300.0f));
+style->ScrollbarSize/=1;
+ImGui_ImplAndroid_Init();
+ImGui_ImplOpenGL3_Init("#version 300 es");
+//==================
+ImFontConfig CustomFont;
+ImGuiIO &io=ImGui::GetIO();
+io.ConfigWindowsMoveFromTitleBarOnly=true;
+io.IniFilename=NULL;
+static const ImWchar icons_ranges[]={0xf000,0xf3ff,0};
+ImFontConfig icons_config;
+icons_config.MergeMode=true;
+icons_config.PixelSnapH=true;
+icons_config.OversampleH=2.5;
+icons_config.OversampleV=2.5;
+io.Fonts->AddFontFromMemoryTTF((void *)ZEUS_data, ZEUS_size, 20.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+io.Fonts->AddFontFromMemoryCompressedTTF(font_awesome_data, font_awesome_size, 25.0f, &icons_config, icons_ranges);
+ImFontConfig cfg;
+cfg.SizePixels=((float)density/22.0f);
+io.Fonts->AddFontDefault(&cfg);
+memset(&Config,0,sizeof(sConfig));
+initImGui=true;
+}
+//==================
+ImGuiIO &io=ImGui::GetIO();
+ImGui_ImplOpenGL3_NewFrame();
+ImGui_ImplAndroid_NewFrame(glWidth,glHeight);
+ImGui::NewFrame();
+//==================
+//static bool RLFLYANTICRACK = true;
+ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ZevaEsp(ImGui::GetBackgroundDrawList());
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2((float)glWidth * 0.26f, (float)glHeight * 0.78f), ImGuiCond_Once);
+std::string ModName = (OBFUSCATE(">>| GOKU CHEAT PVT MOD |<<"));
+
+if (ImGui::Begin(ModName.c_str(), 0, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_AlwaysAutoResize)) {//*/
+
+
+//==============================================================================================================////==============================================================================================================//
+static bool isLogin = false;
+if (!isLogin) {
+static std::string err;
+ImGui::Text(OBFUSCATE("Please Login! (Copy Key to Clipboard)"));
+ImGui::PushItemWidth(-1);
+static char s[64];
+ImGui::InputText(OBFUSCATE("##key"), s, sizeof s);
+auto key = getClipboardText();
+strncpy(s, key.c_str(), sizeof s);
+err = Login(s);
+if (err == "OK") {
+isLogin = bValid && g_Auth == g_Token;Chatanmusic(PAST.c_str());
+}
+ImGui::PopItemWidth();
+ImGui::PushItemWidth(-1);
+if (ImGui::Button(OBFUSCATE(" Paste Key"), ImVec2(ImGui::GetContentRegionAvailWidth(), 0))) {
+auto key = getClipboardText();
+strncpy(s, key.c_str(), sizeof s);
+}
+ImGui::PopItemWidth();
+ImGui::PushItemWidth(-1);
+if (ImGui::Button(OBFUSCATE("Login"), ImVec2(ImGui::GetContentRegionAvailWidth(), 0))) {
+err = Login(s);
+if (err == "OK") {
+isLogin = bValid && g_Auth == g_Token;Chatanmusic(LOGIN.c_str());
+}
+}
+ImGui::PopItemWidth();
+if (!err.empty() && err != "OK") {
+ImGui::Text(OBFUSCATE("Error: %s"), err.c_str());
+}
+ImGui::PopItemWidth();
+} else {               
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//==============================================================================================================//
+
+//======================================================//
+//pthread_t t;
+//======================================================//
+/*ImGui::PushStyleColor(ImGuiCol_BorderShadow, IM_COL32(0, 0, 0, 255));
+ImGui::TableNextColumn();
+if(RLFLYANTICRACK){
+
+             
+ImColor adityaop(isRed, isBlue, isGreen);              
+HueText("GHOST POWER", adityaop);
+ImGui::Separator(); */
+
+pthread_t t;       
+
+//[MAIN ESP BUTTONS]//==============================================================================================================//
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+ACTIVE_ESP=HoloToggle("   ALL ESP",toggle_allesp,ImVec2(280,50),21)?true:false;
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+
+
+//======================================================//
+
+
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+DON_WIDEVIEW=HoloToggle("   I PAD VIEW",toggle_autofire,ImVec2(280,50))?true:false;
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+
+//======================================================//
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+FASTLAND=HoloToggle("   FAST LANDING",toggle_fastlanding,ImVec2(280,50),202100)?true:false;
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+
+				
+//======================================================//
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+RLFLASHV2=HoloToggle("   FLASH 144",toggle_flashspeed,ImVec2(280,50),4449)?true:false;
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+//======================================================//		
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+RLFLY=HoloToggle("   STABLE FLY",toggle_stablesky,ImVec2(280,50),4451)?true:false;
+ImGui::Dummy(ImVec2(0.0f,5.0f));
+
+/*ImGui::Dummy(ImVec2(0.0f,5.0f));
+JUMPFLYV2=HoloToggle("   JUMP FLY",toggle_jumpfly,ImVec2(280,50),4450)?true:false;
+ImGui::Dummy(ImVec2(0.0f,5.0f));*/
+
+
+
+
+/*
+if (ImGui::Checkbox("ALL ESP ",&ACTIVE_ESP)){
+pthread_create(&t, 0, run_thread, (void *)(21));}
+
+ImGui::Checkbox("AUTO FIRE", &AutoFire2);
+
+if (ImGui::Checkbox("FAST LANDING",&FASTLAND)){
+pthread_create(&t, 0, run_thread, (void *)(202100));}
+
+if (ImGui::Checkbox("FLASH 144",&RLFLASHV2)){
+pthread_create(&t, 0, run_thread, (void *)(4449));}
+
+if (ImGui::Checkbox("STABLE FLY",&RLFLY)){
+pthread_create(&t, 0, run_thread, (void *)(4451));}
+
+if (ImGui::Checkbox("JUMP FLY",&JUMPFLYV2)){
+pthread_create(&t, 0, run_thread, (void *)(4450));} 
+//ImGui::Checkbox("GODMENU", &PeekUp);
+//ImGui::Separator();*/
+/*ImGui::SliderFloat("IPAID VIEW", &WIDEVIEW1, 360.f, 170.f,"%.0f");
+ImGui::SliderFloat("FIRE",&ControlSpeed,(0.0f), (0.99f),"%.2f");*/
+}
+ImGui::TableNextColumn();
+ImGui::EndChild();
+}
+if (PeekUp) {
+ ImGui::SetNextWindowSize(ImVec2((float) glWidth * 0.12f, (float) glHeight * 0.500f), ImGuiCond_Once);
+   static int clicked = 0;
+if (ImGui::Begin("###3131", 0,
+ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground))
+ if (ImGui::BeginTabBar) {
+ if (ImGui::Checkbox("UP ",&Godviewup)){
+ pthread_t t;
+pthread_create(&t, 0, run_thread, (void *)(101));}
+ImGui::SameLine();
+ImGui::Checkbox("BOT ", &Config.AimBot.IgnoreBot);
+if (ImGui::Checkbox("DN ",&Godviewdown)){
+pthread_t t;
+pthread_create(&t, 0, run_thread, (void *)(102));
+}
+ImGui::SameLine();
+//ImGui::Checkbox("BOT ", &Config.SilentAim.IgnoreBot); 
+ImGui::Checkbox(" NOK ", &Config.AimBot.IgnoreKnocked);
+if (ImGui::Checkbox(" BT ",&SKYSHOT)){
+ pthread_t t;
+pthread_create(&t, 0, run_thread, (void *)(2007));}
+ImGui::SameLine();
+if (ImGui::Checkbox(" MAG ", &AMMO)) {
+
+               ImGui::EndTabBar();
+                }}    }
+/*
+
+  if (PeekUp) {
+	  
+	  if (ImGui::Begin(" ", 0, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar )) 
+ImGui::TableNextColumn();
+                   
+pthread_t t;                                                       
+ if (ImGui::Checkbox("GOD UP",&Godviewup)){
+ pthread_t t;
+pthread_create(&t, 0, run_thread, (void *)(101));}
+if (ImGui::Checkbox("GOD DN",&Godviewdown)){
+ pthread_t t;
+pthread_create(&t, 0, run_thread, (void *)(102));}
+ImGui::Checkbox("NOK", &Config.AimBot.IgnoreKnocked);
+ImGui::Checkbox("BOT", &Config.AimBot.IgnoreBot);
+ImGui::Checkbox("U.AMO", &AMMO);
+if (ImGui::Checkbox("SKY SHOT",&SKYSHOT)){
+ pthread_t t;
+pthread_create(&t, 0, run_thread, (void *)(1001));}
+//ImGui::SliderFloat("FIRE",&ControlSpeed,(0.0f), (0.99f),"%.2f");
+	}
+*/
+        ImGui::SameLine();
+        ImGui::End();
+        ImGui::Render();
+
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        return orig_eglSwapBuffers(dpy, surface);
+    }
+int32_t ( * orig_onInputEvent)(struct android_app * app, AInputEvent * inputEvent);
+int32_t onInputEvent(struct android_app * app, AInputEvent * inputEvent) {
+if (initImGui) {
+ImGui_ImplAndroid_HandleInputEvent(inputEvent, {(float)screenWidth / (float)glWidth, (float)screenHeight / (float)glHeight});}
+return orig_onInputEvent(app, inputEvent);}
+void *(*oProcessEvent)(UObject *pObj, UFunction *pFunc, void *pArgs);
+void *hkProcessEvent(UObject *pObj, UFunction *pFunc, void *pArgs) {
+const char *EngineHUD = ("Function Engine.HUD.ReceiveDrawHUD");
+if (pFunc) {
+if (pFunc->GetFullName() == EngineHUD) {
+AHUD *pHUD = (AHUD *) pObj;
+if (pHUD) {
+auto Params = (AHUD_ReceiveDrawHUD_Params *) pArgs;
+if (Params) {
+ALFAS_HUD(pHUD, Params->SizeX, Params->SizeY);}}}}
+return oProcessEvent(pObj, pFunc, pArgs);}
+TNameEntryArray *GetGNames(){
+return ((TNameEntryArray * (*)())(UE4 + 0x19ee5f4))();}
+
+void * main_thread(void *) {
+
+UE4 = Tools::GetBaseAddress("libUE4.so");
+while (!UE4) {
+UE4 = Tools::GetBaseAddress("libUE4.so");
+sleep(1);}
+while (!g_App) {
+g_App = * (android_app * *)(UE4 + GNativeAndroidApp_Offset);
+sleep(1);}
+FName::GNames = GetGNames();
+while (!FName::GNames){
+FName::GNames = GetGNames();
+sleep(1);}
+UObject::GUObjectArray = (FUObjectArray *)(UE4 + 0x4fd8d20);
+while (!g_App->onInputEvent)
+sleep(1);
+orig_onInputEvent = decltype(orig_onInputEvent)(g_App->onInputEvent);
+g_App->onInputEvent = onInputEvent;
+plthook_t * plthook;
+if (plthook_open( & plthook, "libUE4.so") == 0) {
+plthook_replace(plthook, "eglSwapBuffers", (void *)_eglSwapBuffers, (void * *) & orig_eglSwapBuffers);
+plthook_close(plthook);}
+Tools::Hook((void *)(UE4 + 0x12C35C8), (void *)CalcShootRot, (void **)&oCalcShootRot);
+Tools::Hook((void *)(UE4 + 0x25a5dc8), (void *)hkProcessEvent, (void **)&oProcessEvent);
+Tools::Hook((void *) (UE4 + 0x12AA918), (void *) hk_GetUnlimitedAmmo,(void **) &orig_GetUnlimitedAmmo);
+
+Patches.ipadrandi=MemoryPatch::createWithHex("libUE4.so",0x26C7B90,"00 00 48 43");
+
+Patches.donxhit2 = MemoryPatch::createWithHex("libUE4.so", 0x1172708, "00 00 00 00");
+//Patches.donxhit1 = MemoryPatch::createWithHex("libUE4.so", 0x11726CC, "00 00 00 00");
+Patches.dasertmap10 = MemoryPatch::createWithHex("libUE4.so", 0x11726EC, "00 00 00 00");// chota x hit//*/
+
+Patches.noshake1 = MemoryPatch::createWithHex("libUE4.so", 0xDB4C38, "00 00 00 00");
+Patches.noshake3 = MemoryPatch::createWithHex("libUE4.so", 0x2648B80, "00 00 00 00");
+Patches.noshake4 = MemoryPatch::createWithHex("libUE4.so", 0x26C4CAC, "00 00 00 00");
+Patches.noshake5 = MemoryPatch::createWithHex("libUE4.so", 0x2742334, "00 00 00 00");
+Patches.noshake6 = MemoryPatch::createWithHex("libUE4.so", 0x2742354, "00 00 00 00");
+Patches.Rahul = MemoryPatch::createWithHex("libUE4.so", 13311560, "C4 0A B1 EE");
+Patches.flash01 = MemoryPatch::createWithHex("libUE4.so", 0x2D107D0, "00 00 00 00"); 
+Patches.flash02 = MemoryPatch::createWithHex("libUE4.so", 0x2C3BA14, "00 00 10 41"); 
+Patches.flash03 = MemoryPatch::createWithHex("libUE4.so", 0xCBCB00, "00 00 50 E3"); 
+Patches.flash04 = MemoryPatch::createWithHex("libUE4.so", 0x2684E28, "00 00 00 40"); 
+Patches.flash05 = MemoryPatch::createWithHex("libUE4.so", 0x2704F44, "8F C2 75 3E"); 
+Patches.flash06 = MemoryPatch::createWithHex("libUE4.so", 0x2710C8C, "00 00 00 00"); 
+Patches.flash07 = MemoryPatch::createWithHex("libUE4.so", 0x2C3B974, "00 00 00 00");
+Patches.flash08 = MemoryPatch::createWithHex("libUE4.so", 0x2C3B98C, "00 00 00 00"); 
+Patches.flash09 = MemoryPatch::createWithHex("libUE4.so", 0x2C3BA18, "00 00 00 00"); 
+Patches.flash10 = MemoryPatch::createWithHex("libUE4.so", 0x2A9DA10, "00 00 00 00"); 
+Patches.flash11 = MemoryPatch::createWithHex("libUE4.so", 0x26F9C00, "00 00 00 00");
+items_data = json::parse(JSON_ITEMS);
+return 0;}
+__attribute__((constructor)) void _init() {
+pthread_t t;
+pthread_create( & t, 0, main_thread, 0);}
+//@THOR_LITE_OWNER
+//@THOR_LITE_OWNER

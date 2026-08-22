@@ -1,0 +1,85 @@
+LOCAL_PATH := $(call my-dir)
+MAIN_LOCAL_PATH := $(call my-dir)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libcurl
+LOCAL_SRC_FILES := curl/curl-android-$(TARGET_ARCH_ABI)/lib/libcurl.a
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libssl
+LOCAL_SRC_FILES := curl/openssl-android-$(TARGET_ARCH_ABI)/lib/libssl.a
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libfoxcheats
+LOCAL_SRC_FILES := FoxCheats/$(TARGET_ARCH_ABI)/libfoxcheats.a
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libcrypto
+LOCAL_SRC_FILES := curl/openssl-android-$(TARGET_ARCH_ABI)/lib/libcrypto.a
+include $(PREBUILT_STATIC_LIBRARY)
+
+
+include $(CLEAR_VARS)
+LOCAL_MODULE    := ZevaLite
+
+LOCAL_CFLAGS := -Wno-error=format-security -fvisibility=hidden -ffunction-sections -fdata-sections -w
+LOCAL_CFLAGS += -fno-rtti -fno-exceptions -fpermissive
+LOCAL_CPPFLAGS := -Wno-error=format-security -fvisibility=hidden -ffunction-sections -fdata-sections -w -Werror -s -std=c++17
+LOCAL_CPPFLAGS += -Wno-error=c++11-narrowing -fms-extensions -fno-rtti -fno-exceptions -fpermissive
+LOCAL_LDFLAGS += -Wl,--gc-sections,--strip-all, -llog
+LOCAL_LDFLAGS += -latomic
+LOCAL_ARM_MODE := arm
+
+LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)
+
+LOCAL_SRC_FILES 		:=  GOKU.cpp \
+        Tools.cpp \
+        And64InlineHook/And64InlineHook.cpp \
+        Hook.cpp \
+        Helper/plthook_elf.cpp \
+        Helper/fake_dlfcn.cpp \
+        Helper/android_native_app_glue.c \
+        imgui/imgui.cpp \
+        imgui/imgui_draw.cpp\
+        imgui/imgui_tables.cpp \
+        imgui/stb_image.cpp \
+        imgui/imgui_widgets.cpp \
+        imgui/backends/imgui_impl_android.cpp \
+        imgui/backends/imgui_impl_opengl3.cpp \
+        Substrate/hde64.c \
+    	Substrate/SubstrateDebug.cpp \
+    	Substrate/SubstrateHook.cpp \
+	    Substrate/SubstratePosixMemory.cpp \
+    	Substrate/SymbolFinder.cpp \
+    	SDK/LITE_Basic.cpp \
+        SDK/LITE_Basic_functions.cpp \
+        SDK/LITE_Engine_functions.cpp \
+        SDK/LITE_Client_functions.cpp \
+        SDK/LITE_CoreUObject_functions.cpp \
+        SDK/LITE_ShadowTrackerExtra_functions.cpp \
+    	KittyMemory/KittyMemory.cpp \
+    	KittyMemory/MemoryPatch.cpp \
+        KittyMemory/MemoryBackup.cpp \
+        KittyMemory/KittyUtils.cpp
+
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/FoxCheats
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/curl/curl-android-$(TARGET_ARCH_ABI)/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/curl/openssl-android-$(TARGET_ARCH_ABI)/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/Includes
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/imgui
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/KittyMemory
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/SDK
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/Substrate
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/Helper
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/And64InlineHook
+
+LOCAL_CPP_FEATURES                      := exceptions
+LOCAL_LDLIBS                            := -llog -landroid -lEGL -lGLESv2 -lGLESv3 -lGLESv1_CM -lz
+LOCAL_STATIC_LIBRARIES					:= libcurl libssl libcrypto libfoxcheats
+
+include $(BUILD_SHARED_LIBRARY)
+
